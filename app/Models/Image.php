@@ -14,4 +14,8 @@ class Image extends Model
     public function workshop() {
         return $this->belongsTo(WorkshopProvider::class,'workshop_provider_id');
     }
+
+    public function car() {
+        return $this->belongsTo(CarlistingModel::class,'carlisting_id');
+    }
 }

@@ -2,15 +2,15 @@
 namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\WorkshopResource;
-use App\Http\Resources\UserResource;
 use App\Http\Resources\ImageResource;
+use App\Http\Resources\UserResource;
+use App\Http\Resources\WorkshopResource;
 use App\Models\allUsersModel;
 use App\Models\CustomersCars;
 use App\Models\CustomerService;
+use App\Models\Image;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
-use App\Models\Image;
 use App\Models\WorkshopAppointments;
 use App\Models\WorkshopCategory;
 use App\Models\WorkshopCustomer;
@@ -18,9 +18,9 @@ use App\Models\WorkshopExpenses;
 use App\Models\WorkshopProvider;
 use App\Models\WorkshopService;
 use App\Models\WorkshopServices;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Exception;
 
 // Add this at the top
 
@@ -28,7 +28,6 @@ class WorkShopController extends Controller
 {
     public function register(Request $request)
     {
-        // dd($request);
         $request->validate([
             'fname'         => 'required',
             'lname'         => 'required',
@@ -37,14 +36,18 @@ class WorkShopController extends Controller
             'password'      => 'required|min:6',
             'workshop_name' => 'required',
             'owner'         => 'max:245',
-            'location'       => 'max:245',
-            'city'        => 'max:245',
-            'lat'      => 'max:245',
-            'lng'     => 'max:245',
+            'location'      => 'max:245',
+            'city'          => 'max:245',
+            'lat'           => 'max:245',
+            'lng'           => 'max:245',
             'tax_number'    => 'max:245',
             'legal_number'  => 'max:245',
             'employee'      => 'max:245',
-            // 'workshop_logo' => 'required|image|mimes:png,jpeg,gif,jpg',
+            'workshop_logo' => 'required|image|mimes:png,jpeg,gif,jpg',
+            // Image array validation
+            'images'        => 'nullable|array|max:5|min:1',
+            'images.*'      => 'image|mimes:jpg,jpeg,png,gif', // Optional: limit file size to 2MB per image
+
         ]);
 
         $user = allUsersModel::create([
@@ -52,10 +55,10 @@ class WorkShopController extends Controller
             'lname'    => $request['lname'],
             'phone'    => $request['phone'],
             'email'    => $request['email'],
-            'location'    => $request['location'],
-            'lat'    => $request['lat'],
-            'lng'    => $request['lng'],
-            'city'    => $request['city'],
+            'location' => $request['location'],
+            'lat'      => $request['lat'],
+            'lng'      => $request['lng'],
+            'city'     => $request['city'],
             'password' => bcrypt($request['password']),
             "usertype" => "workshop_provider",
         ]);
@@ -66,7 +69,7 @@ class WorkShopController extends Controller
             $img1->move(public_path('workshops'), $imgname1);
             $company_img = 'workshops/' . $imgname1;
             $user->update(['image' => $company_img]);
-        }else{
+        } else {
             $company_img = null;
         }
 
@@ -86,25 +89,39 @@ class WorkShopController extends Controller
 
         $workshop_provider = WorkshopProvider::create($wsData);
 
-        if ($request->images) {
-            foreach($request->images as $image){
-                $img1     = $image;
-                $imgname1 = time() . '.' . $img1->getClientOriginalExtension();
-                $img1->move(public_path('workshops'), $imgname1);
-                $company_img = 'workshops/' . $imgname1;
-
-                $image = new Image();
-                $image->image = $company_img;
-                $image->workshop_provider_id = $workshop_provider->id;
-                $image->save();
-            }
+        // Step 1: Create 5 placeholder images
+        for ($i = 0; $i < 5; $i++) {
+            Image::create([
+                'image'                => null, // or 'icons/notfound.png'
+                'workshop_provider_id' => $workshop_provider->id,
+            ]);
         }
 
-        if($request->brands){
+        // Step 2: Replace the placeholders with actual uploaded images (max 5)
+        if ($request->hasFile('images')) {
+            $uploadedImages = $request->file('images');
+            $images         = $workshop_provider->images()->take(5)->get(); // Get first 5 placeholder records
+
+            foreach ($uploadedImages as $index => $uploadedImage) {
+                if ($index >= 5) {
+                    break;
+                }
+                // Safety check
+
+                $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
+                $uploadedImage->move(public_path('workshops'), $imgName);
+                $imagePath = 'workshops/' . $imgName;
+
+                $images[$index]->update([
+                    'image' => $imagePath,
+                ]);
+            }
+        }
+        if ($request->brands) {
             $workshop_provider->brands()->sync($request->brands);
         }
 
-        if($request->categories){
+        if ($request->categories) {
             $workshop_provider->categories()->sync($request->categories);
         }
 
@@ -126,9 +143,9 @@ class WorkShopController extends Controller
                 'status'  => true,
                 'message' => 'Accounted created Successfully!',
                 'data'    => [
-                    "auth_token" => $user->createToken('tokens')->plainTextToken,
-                    "user"       => new UserResource($user),
-                    "workshop_data" => new WorkshopResource($user->workshop_provider)
+                    "auth_token"    => $user->createToken('tokens')->plainTextToken,
+                    "user"          => new UserResource($user),
+                    "workshop_data" => new WorkshopResource($user->workshop_provider),
                 ],
             ];
         } else {
@@ -219,19 +236,20 @@ class WorkShopController extends Controller
         ];
     }
 
-    public function uploadWorkshopImages(Request $request){
-        try{
+    public function uploadWorkshopImages(Request $request)
+    {
+        try {
             $user = auth()->user();
-    
+
             if ($request->images) {
-                foreach($request->images as $image){
+                foreach ($request->images as $image) {
                     $img1     = $image;
                     $imgname1 = time() . '.' . $img1->getClientOriginalExtension();
                     $img1->move(public_path('workshops'), $imgname1);
                     $company_img = 'workshops/' . $imgname1;
-    
-                    $image = new Image();
-                    $image->image = $company_img;
+
+                    $image                       = new Image();
+                    $image->image                = $company_img;
                     $image->workshop_provider_id = $user->workshop_provider->id;
                     $image->save();
                 }
@@ -242,16 +260,17 @@ class WorkShopController extends Controller
                 'message' => 'Images Uploaded Successfully!',
                 'data'    => ImageResource::collection($user->workshop_provider->images),
             ];
-        }catch(Exception $e){
+        } catch (Exception $e) {
 
         }
     }
 
-    public function index(){
+    public function index()
+    {
         $workshops = WorkshopProvider::get();
         return [
-            "status"  => true,
-            "data"    =>  WorkshopResource::collection($workshops),
+            "status" => true,
+            "data"   => WorkshopResource::collection($workshops),
         ];
     }
 
@@ -291,14 +310,34 @@ class WorkShopController extends Controller
 
             $workshop->save();
 
+            if ($request->hasFile('images')) {
+                $uploadedImages = $request->file('images');
+                $images         = $workshop_provider->images()->take(5)->get(); // Get first 5 placeholder records
+    
+                foreach ($uploadedImages as $index => $uploadedImage) {
+                    if ($index >= 5) {
+                        break;
+                    }
+                    // Safety check
+    
+                    $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
+                    $uploadedImage->move(public_path('workshops'), $imgName);
+                    $imagePath = 'workshops/' . $imgName;
+    
+                    $images[$index]->update([
+                        'image' => $imagePath,
+                    ]);
+                }
+            }
+            
             //  Sync brands and categories (only if they exist in DB)
             $workshop->brands()->sync($request['brands']);
             $workshop->categories()->sync($request['categories']);
 
             if ($request->days) {
-                
+
                 $workshop->days()->delete();
-                    
+
                 for ($i = 0; $i <= count($request->days); $i++) {
                     if (isset($request->days[$i]['day']) && isset($request->days[$i]['from']) && isset($request->days[$i]['to'])) {
                         $workshop->days()->create([
@@ -344,9 +383,9 @@ class WorkShopController extends Controller
         $workshop = WorkshopProvider::where('user_id', auth()->user()->id)->first();
 
         return [
-            'status'  => true,
-            'message' => "Data get successfully!",
-            'user' => new UserResource(auth()->user()),
+            'status'        => true,
+            'message'       => "Data get successfully!",
+            'user'          => new UserResource(auth()->user()),
             'workshop_data' => new WorkshopResource($workshop),
         ];
     }

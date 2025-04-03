@@ -10,14 +10,11 @@ class CarListingResource extends JsonResource
     {
         $baseUrl = env('APP_URL');
 
-        $incomeImages = [$this->listing_img1, $this->listing_img2, $this->listing_img3, $this->listing_img4, $this->listing_img5];
-        $images       = [];
-
-        foreach ($incomeImages as $image) {
-            if ($image != null || $image != '') {
-                $images[] = $baseUrl . '/' . $image;
-            }
-        }
+        $images = $this->images()
+        ->whereNotNull('image')
+        ->pluck('image')
+        ->map(fn($image) => $baseUrl . '/' . $image)
+        ->toArray();
 
         $company_name = $this->user->dealer->company_name;
         return [

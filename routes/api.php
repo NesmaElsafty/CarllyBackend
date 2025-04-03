@@ -1,21 +1,19 @@
 <?php
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\api\allUsersController;
-use App\Http\Controllers\api\carListingController;
-use App\Http\Controllers\api\sparePartsController;
-use App\Http\Controllers\api\AdminController;
-use App\Http\Controllers\api\DealerController;
-use App\Http\Controllers\api\ShopController;
-use App\Http\Controllers\api\WorkShopController;
-use App\Http\Controllers\api\MessageController;
-use App\Http\Controllers\api\DataManageController;
-use App\Http\Controllers\api\PackageController;
-use App\Http\Controllers\api\WorkShopCategoryController;
-use App\Http\Controllers\api\CarBrandController;
 use App\Http\Controllers\api\AdController;
+use App\Http\Controllers\api\AdminController;
+use App\Http\Controllers\api\allUsersController;
 use App\Http\Controllers\api\BannerController;
+use App\Http\Controllers\api\CarBrandController;
+use App\Http\Controllers\api\carListingController;
+use App\Http\Controllers\api\DataManageController;
+use App\Http\Controllers\api\DealerController;
 use App\Http\Controllers\api\ImageController;
+use App\Http\Controllers\api\MessageController;
+use App\Http\Controllers\api\PackageController;
+use App\Http\Controllers\api\ShopController;
+use App\Http\Controllers\api\WorkShopCategoryController;
+use App\Http\Controllers\api\WorkShopController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,7 +44,6 @@ Route::group(['prefix' => 'admin', 'middleware' => 'guest'], function () {
 
         Route::post('getUsers', [AdminController::class, 'getUsers']);
 
-        
         Route::get('getCarsListing', [AdminController::class, 'getCarsListing']);
         Route::post('delCar', [AdminController::class, 'delCar']);
 
@@ -57,7 +54,6 @@ Route::group(['prefix' => 'admin', 'middleware' => 'guest'], function () {
         Route::post('userAccStatus', [AdminController::class, 'userAccStatus']);
 
         Route::post('getUserDetails', [AdminController::class, 'getUserDetails']);
-
 
         Route::post('addBrand', [AdminController::class, 'addBrand']);
         Route::post('delBrand', [AdminController::class, 'delBrand']);
@@ -82,7 +78,6 @@ Route::group(['prefix' => 'admin', 'middleware' => 'guest'], function () {
         Route::get('getSettings', [AdminController::class, 'getSettings']);
         Route::post('updateSettings', [AdminController::class, 'updateSettings']);
 
-
         Route::get('getSubCategories', [DataManageController::class, 'getSubCategories']);
         Route::post('addSubCategory', [DataManageController::class, 'addSubCategory']);
         Route::post('updateSubcategory', [DataManageController::class, 'updateSubcategory']);
@@ -100,21 +95,20 @@ Route::group(['prefix' => 'admin', 'middleware' => 'guest'], function () {
         Route::post('addPackage', [PackageController::class, 'addPackage']);
         Route::post('delPackage', [PackageController::class, 'delPackage']);
         Route::post('create/WorkshopCat', [WorkShopCategoryController::class, 'addWorkshopCat']);
-        
+
         // -----------Service Categories---------------
         Route::post('addServiceCat', [WorkShopCategoryController::class, 'addServiceCat']);
         Route::get('getServicCategories', [WorkShopCategoryController::class, 'getServicesCategories']);
         Route::post('delServiceCategory', [WorkShopCategoryController::class, 'delServiceCategory']);
-   
+
         Route::resource('ads', AdController::class);
         Route::get('countViews/{id}', [AdController::class, 'countViews']);
-        
+
         Route::resource('banners', BannerController::class);
         Route::post('/banners/{banner}', [BannerController::class, 'update']);
 
     });
 });
-
 
 //General APIs
 Route::get('getBrandsList', [DealerController::class, 'getBrandsList']);
@@ -131,7 +125,6 @@ Route::get('getWebPages', [DataManageController::class, 'getWebPages']);
 Route::get('getPages', [DealerController::class, 'getPages']);
 
 Route::get('getWorkshopCategories', [WorkShopController::class, 'getWorkshopCategories']);
-
 
 ///// Car Dealer APIs //////////////
 Route::group(['prefix' => 'dealer', 'middleware' => 'guest'], function () {
@@ -178,37 +171,36 @@ Route::group(['prefix' => 'workshop', 'middleware' => 'guest'], function () {
 
         Route::post('uploadWorkshopImages', [WorkShopController::class, 'uploadWorkshopImages']);
 
-
         Route::get('getAllInvoices', [WorkShopController::class, 'getAllInvoices']);
         Route::post('createInvoice', [WorkShopController::class, 'createInvoice']);
         Route::get('getProfile', [WorkShopController::class, 'getProfile']);
         Route::post('logout', [WorkShopController::class, 'logout']);
-        
+
         Route::get('getAllServiceCat', [WorkShopCategoryController::class, 'getServicesCategories']);
-        
+
         Route::post('addservice', [WorkShopController::class, 'addworkshopservice']);
         Route::get('getAllServices', [WorkShopController::class, 'getAllServices']);
         Route::post('delService', [WorkShopController::class, 'delService']);
-        
-         //---------------Manage workshop customers  Cars ------------------------
+
+        //---------------Manage workshop customers  Cars ------------------------
         Route::post('/addCar', [WorkShopController::class, 'addCar']);
         Route::get('/getAllCars', [WorkShopController::class, 'getAllCars']);
         Route::post('/deleteCar', [WorkShopController::class, 'delCars']);
 
-         //---------------Manage workshop customers service------------------------
-         Route::post('/addCustomerService', [WorkShopController::class, 'addCustomerService']);
-         Route::get('/getAllCustomerServices', [WorkShopController::class, 'getAllCustomerServices']);
-         Route::post('/deleteCustomerService', [WorkShopController::class, 'deleteCustomerService']);
-         
-         //---------------Manage workshop expense------------------------
-         Route::post('/addExpense', [WorkShopController::class, 'addWorkshopExpense']);
-         Route::get('/getAllExpense', [WorkShopController::class, 'getWorkshopExpense']);
-         Route::post('/deleteExpense', [WorkShopController::class, 'deleteWorkshopExpense']);
-         
-         //---------------Manage workshop Appointment------------------------
-         Route::post('/addAppointment', [WorkShopController::class, 'addAppointment']);
-         Route::get('/getAllAppointments', [WorkShopController::class, 'getAllAppointments']);
-         Route::post('/deleteAppointment', [WorkShopController::class, 'deleteAppointment']);
+        //---------------Manage workshop customers service------------------------
+        Route::post('/addCustomerService', [WorkShopController::class, 'addCustomerService']);
+        Route::get('/getAllCustomerServices', [WorkShopController::class, 'getAllCustomerServices']);
+        Route::post('/deleteCustomerService', [WorkShopController::class, 'deleteCustomerService']);
+
+        //---------------Manage workshop expense------------------------
+        Route::post('/addExpense', [WorkShopController::class, 'addWorkshopExpense']);
+        Route::get('/getAllExpense', [WorkShopController::class, 'getWorkshopExpense']);
+        Route::post('/deleteExpense', [WorkShopController::class, 'deleteWorkshopExpense']);
+
+        //---------------Manage workshop Appointment------------------------
+        Route::post('/addAppointment', [WorkShopController::class, 'addAppointment']);
+        Route::get('/getAllAppointments', [WorkShopController::class, 'getAllAppointments']);
+        Route::post('/deleteAppointment', [WorkShopController::class, 'deleteAppointment']);
 
         //  ------------------Update Workshop, ws Brands and Categories--------------------------
         Route::post('/update', [WorkShopController::class, 'update']);
@@ -217,8 +209,6 @@ Route::group(['prefix' => 'workshop', 'middleware' => 'guest'], function () {
 
     });
 });
-
-
 
 Route::post('login', [allUsersController::class, 'login']);
 Route::post('register', [allUsersController::class, 'register']);
@@ -237,7 +227,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::resource('images', controller: ImageController::class);
     //For User APP
-   
+
     Route::post('addCarListing', [carListingController::class, 'addCarListing']);
     Route::post('editCarListing', [carListingController::class, 'editCarListing']);
     Route::post('myCarsListing', [carListingController::class, 'myCarsListing']);
@@ -246,7 +236,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('getRecentChats', [MessageController::class, 'getRecentChats']);
     Route::post('sendMessage', [MessageController::class, 'sendMessage']);
     Route::post('uploadImgs', [carListingController::class, 'uploadImgs']);
-    
+
     Route::post('deleteUser', [allUsersController::class, 'deleteUser']);
 });
 

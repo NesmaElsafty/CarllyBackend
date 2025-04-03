@@ -35,6 +35,9 @@ class carListingModel extends Model
         return $this->belongsTo(allUsersModel::class,'user_id');
     }
 
+    public function images(){
+        return $this->hasMany(Image::class,'carlisting_id');
+    }
     public function getCreatedAtAttribute($val)
     {
         return Carbon::parse($val)->format('d M, Y H:i');
