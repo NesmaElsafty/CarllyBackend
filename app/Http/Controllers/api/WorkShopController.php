@@ -312,7 +312,7 @@ class WorkShopController extends Controller
 
             if ($request->hasFile('images')) {
                 $uploadedImages = $request->file('images');
-                $images         = $workshop_provider->images()->take(5)->get(); // Get first 5 placeholder records
+                $images         = $workshop->images()->take(5)->orderBy('id', 'DESC')->get(); // Get first 5 placeholder records
     
                 foreach ($uploadedImages as $index => $uploadedImage) {
                     if ($index >= 5) {
@@ -356,6 +356,7 @@ class WorkShopController extends Controller
             ]);
 
         } catch (Exception $e) {
+            dd($e->gettMessage);
             return response()->json([
                 'status'  => false,
                 'message' => $e->getMessage(),

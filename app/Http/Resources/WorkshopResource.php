@@ -24,6 +24,7 @@ class WorkshopResource extends JsonResource
 
         $images = $this->images()
         ->whereNotNull('image')
+        ->where('image', '!=', '')
         ->pluck('image')
         ->map(fn($image) => $baseUrl . '/' . $image)
         ->toArray();
