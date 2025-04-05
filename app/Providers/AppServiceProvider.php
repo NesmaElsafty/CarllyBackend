@@ -1,11 +1,10 @@
 <?php
-
 namespace App\Providers;
-use App\Models\CarlistingModel;
-use App\Models\WorkshopProvider;
-use App\Models\Image;
-use Illuminate\Support\ServiceProvider;
+
+use App\Models\BrandModel;
 use DB;
+use Illuminate\Support\ServiceProvider;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -41,8 +40,33 @@ class AppServiceProvider extends ServiceProvider
         //         $image->save();
         //     }
         // }
-        
-        
-        
+
+        $spareparts = DB::table('spare_parts')->select('id', 'car_model')->get();
+        foreach ($spareparts as $part) {
+            $models = json_decode($part->car_model, true);
+            
+            if(gettype($models) == 'array'){
+            $modelIds = BrandModel::whereIn('name', $models)->pluck('id')->toArray();
+                foreach($modelIds as $modelId){
+                    DB::table('brand_model_spare_part')->insert([
+                        'brand_model_id' => $modelId,
+                        'spare_part_id' => $part->id,
+                    ]);
+                }
+            }else{
+                // dd($models);
+                $models = json_decode($part->car_model, true);
+                $models = json_decode($models, true);
+
+                $modelIds = BrandModel::whereIn('name', $models)->pluck('id')->toArray();
+                foreach($modelIds as $modelId){
+                    DB::table('brand_model_spare_part')->insert([
+                        'brand_model_id' => $modelId,
+                        'spare_part_id' => $part->id,
+                    ]);
+                }
+            }
+        }
+
     }
 }
