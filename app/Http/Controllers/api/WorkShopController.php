@@ -43,7 +43,7 @@ class WorkShopController extends Controller
             'tax_number'    => 'max:245',
             'legal_number'  => 'max:245',
             'employee'      => 'max:245',
-            'workshop_logo' => 'required|image|mimes:png,jpeg,gif,jpg',
+            'workshop_logo' => 'nullable|image|mimes:png,jpeg,gif,jpg',
             // Image array validation
             'images'        => 'nullable|array|max:5|min:1',
             'images.*'      => 'image|mimes:jpg,jpeg,png,gif', // Optional: limit file size to 2MB per image
