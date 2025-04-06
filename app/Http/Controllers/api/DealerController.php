@@ -290,6 +290,7 @@ class DealerController extends Controller
             'listing_desc'          => $request->listing_desc,
             'user_id'               => auth()->user()->id,
             'listing_title'          => $request->listing_type . ' ' . $request->listing_model,
+
             'features_gear'         => $request->features_gear,
             'features_speed'        => $request->features_speed,
             'features_seats'        => $request->features_seats,
