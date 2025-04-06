@@ -177,6 +177,9 @@ Route::group(['prefix' => 'workshop', 'middleware' => 'guest'], function () {
         Route::get('getAllInvoices', [WorkShopController::class, 'getAllInvoices']);
         Route::post('createInvoice', [WorkShopController::class, 'createInvoice']);
         Route::get('getProfile', [WorkShopController::class, 'getProfile']);
+        Route::post('wsUploadImgs', [WorkShopController::class, 'wsUploadImgs']);
+        Route::delete('wsDelImg/{id}', [WorkShopController::class, 'wsDelImg']);
+
         Route::post('logout', [WorkShopController::class, 'logout']);
 
         Route::get('getAllServiceCat', [WorkShopCategoryController::class, 'getServicesCategories']);
@@ -213,15 +216,6 @@ Route::group(['prefix' => 'workshop', 'middleware' => 'guest'], function () {
     });
 });
 
-Route::post('login', [allUsersController::class, 'login']);
-Route::post('register', [allUsersController::class, 'register']);
-Route::get('getAllCarsListing', [AdminController::class, 'getCarsListing']);
-Route::get('searchSpareParts', [allUsersController::class, 'searchSpareParts']);
-
-//New Apis for deep linking
-Route::get('getCarListingById/{id}', [carListingController::class, 'getCarListingById']);
-Route::get('getSparePartsById/{id}', [carListingController::class, 'getSparePartsById']);
-
 Route::middleware(['auth:sanctum'])->group(function () {
     // Your routes here
     Route::post('updateProfile', [DealerController::class, 'updateProfile']);
@@ -248,3 +242,13 @@ Route::get('brands', [CarBrandController::class, 'index']);
 Route::get('categories', [WorkshopCategoryController::class, 'index']);
 Route::get('workshops', [WorkShopController::class, 'index']);
 Route::post('packages', [PackageController::class, 'index']);
+
+
+Route::post('login', [allUsersController::class, 'login']);
+Route::post('register', [allUsersController::class, 'register']);
+Route::get('getAllCarsListing', [AdminController::class, 'getCarsListing']);
+Route::get('searchSpareParts', [allUsersController::class, 'searchSpareParts']);
+
+//New Apis for deep linking
+Route::get('getCarListingById/{id}', [carListingController::class, 'getCarListingById']);
+Route::get('getSparePartsById/{id}', [carListingController::class, 'getSparePartsById']);

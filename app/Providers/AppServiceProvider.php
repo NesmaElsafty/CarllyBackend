@@ -48,22 +48,13 @@ class AppServiceProvider extends ServiceProvider
         // ->delete();
 
 
-        // $cars = carListingModel::get();
-        // foreach($cars as $car){
-        //     $car->current = count($car->images);
-        //     $car->max = 10;
-        //     $car->save();
+        // $workshop_providers = WorkshopProvider::get();
+        // foreach($workshop_providers as $provider){
+        //     $provider->current = count($provider->images);
+        //     $provider->max = 5;
+        //     $provider->save();
         // }
         
-        // $workshops = DB::table('workshop_providers')->select('id')->pluck('id')->toArray();
-        // foreach( $workshops as $workshop ) {
-
-        //     for($i=0; $i < 5; $i++){
-        //         $image  = new Image();
-        //         $image->workshop_provider_id = $workshop;
-        //         $image->save();
-        //     }
-        // }
 
     //     DB::table('spare_parts')
     // ->select('id', 'car_model')

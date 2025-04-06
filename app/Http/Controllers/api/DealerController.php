@@ -353,7 +353,6 @@ class DealerController extends Controller
         if ($request->pickup_time) {
             $validatedData['pickup_time'] = $request->pickup_time;
         }
-        // dd($validatedData);
         $data = carListingModel::findOrFail($request->carId);
         $data->update($validatedData);
         return [
@@ -371,8 +370,7 @@ class DealerController extends Controller
                 'images.*' => 'image|mimes:jpg,jpeg,png,gif',
             ]);
             $data = carListingModel::findOrFail($request->carId);
-            // dd($data->current);
-            if ($data->current + count($request->images) >= $data->max) {
+            if ($data->current + count($request->images) > $data->max) {
 
                 return response()->json([
                     'status'  => false,

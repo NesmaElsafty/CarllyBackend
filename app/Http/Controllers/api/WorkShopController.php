@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ImageResource;
 use App\Http\Resources\UserResource;
 use App\Http\Resources\WorkshopResource;
+// use App\Http\Resources\ImageResource;
 use App\Models\allUsersModel;
 use App\Models\CustomersCars;
 use App\Models\CustomerService;
@@ -21,6 +22,7 @@ use App\Models\WorkshopServices;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\File;
 
 // Add this at the top
 
@@ -45,7 +47,7 @@ class WorkShopController extends Controller
             'employee'      => 'max:245',
             'workshop_logo' => 'nullable|image|mimes:png,jpeg,gif,jpg',
             // Image array validation
-            'images'        => 'nullable|array|max:5|min:1',
+            'images'        => 'nullable|array',
             'images.*'      => 'image|mimes:jpg,jpeg,png,gif', // Optional: limit file size to 2MB per image
 
         ]);
@@ -85,38 +87,29 @@ class WorkShopController extends Controller
             "tax_number"    => $request->tax_number,
             "legal_number"  => $request->legal_number,
             "employee"      => $request->employee,
+            'max'                   => 5,
+            'current'               => $request->images ? count($request->images) : 0,
         ];
 
         $workshop_provider = WorkshopProvider::create($wsData);
-
-        // Step 1: Create 5 placeholder images
-        for ($i = 0; $i < 5; $i++) {
-            Image::create([
-                'image'                => null, // or 'icons/notfound.png'
-                'workshop_provider_id' => $workshop_provider->id,
-            ]);
-        }
-
-        // Step 2: Replace the placeholders with actual uploaded images (max 5)
-        if ($request->hasFile('images')) {
-            $uploadedImages = $request->file('images');
-            $images         = $workshop_provider->images()->take(5)->get(); // Get first 5 placeholder records
+        
+        if ($request->images) {
+            $uploadedImages = $request->images;
 
             foreach ($uploadedImages as $index => $uploadedImage) {
-                if ($index >= 5) {
+                if ($index >= $workshop_provider->max) {
                     break;
                 }
-                // Safety check
-
                 $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
                 $uploadedImage->move(public_path('workshops'), $imgName);
                 $imagePath = 'workshops/' . $imgName;
 
-                $images[$index]->update([
+                $workshop_provider->images()->create([
                     'image' => $imagePath,
                 ]);
             }
         }
+
         if ($request->brands) {
             $workshop_provider->brands()->sync($request->brands);
         }
@@ -236,35 +229,6 @@ class WorkShopController extends Controller
         ];
     }
 
-    public function uploadWorkshopImages(Request $request)
-    {
-        try {
-            $user = auth()->user();
-
-            if ($request->images) {
-                foreach ($request->images as $image) {
-                    $img1     = $image;
-                    $imgname1 = time() . '.' . $img1->getClientOriginalExtension();
-                    $img1->move(public_path('workshops'), $imgname1);
-                    $company_img = 'workshops/' . $imgname1;
-
-                    $image                       = new Image();
-                    $image->image                = $company_img;
-                    $image->workshop_provider_id = $user->workshop_provider->id;
-                    $image->save();
-                }
-            }
-
-            return [
-                'status'  => true,
-                'message' => 'Images Uploaded Successfully!',
-                'data'    => ImageResource::collection($user->workshop_provider->images),
-            ];
-        } catch (Exception $e) {
-
-        }
-    }
-
     public function index()
     {
         $workshops = WorkshopProvider::get();
@@ -313,26 +277,6 @@ class WorkShopController extends Controller
             }
 
             $workshop->save();
-
-            if ($request->hasFile('images')) {
-                $uploadedImages = $request->file('images');
-                $images         = $workshop->images()->take(5)->get(); // Get first 5 placeholder records
-    
-                foreach ($uploadedImages as $index => $uploadedImage) {
-                    if ($index >= 5) {
-                        break;
-                    }
-                    // Safety check
-    
-                    $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
-                    $uploadedImage->move(public_path('workshops'), $imgName);
-                    $imagePath = 'workshops/' . $imgName;
-    
-                    $images[$index]->update([
-                        'image' => $imagePath,
-                    ]);
-                }
-            }
             
             //  Sync brands and categories (only if they exist in DB)
             $workshop->brands()->sync($request['brands']);
@@ -365,6 +309,85 @@ class WorkShopController extends Controller
                 'status'  => false,
                 'message' => $e->getMessage(),
             ], 500);
+        }
+    }
+
+    public function wsUploadImgs(Request $request)
+    {
+        try {
+            $request->validate([
+                'workshop_id'    => 'required',
+                'images.*' => 'image|mimes:jpg,jpeg,png,gif',
+            ]);
+            $data = WorkshopProvider::findOrFail($request->workshop_id);
+            
+            if ($data->current + count($request->images) > $data->max) {
+
+                return response()->json([
+                    'status'  => false,
+                    'message' => "You can't upload more than " . $data->max . " images!",
+                ]);
+            } else {
+                foreach ($request->images as $index => $uploadedImage) {
+
+                    $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
+                    $uploadedImage->move(public_path('workshops'), $imgName);
+                    $imagePath = 'workshops/' . $imgName;
+
+                    $data->images()->create([
+                        'image' => $imagePath,
+                    ]);
+
+                    $data->current = $data->current + 1;
+                    $data->save();
+                }
+
+                return response()->json([
+                    'status'  => true,
+                    'message' => "Images uploaded successfully!",
+                    'data'    => ImageResource::collection($data->images),
+                ]);
+            }
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+
+    }
+
+    public function wsDelImg($id)
+    {
+        try{
+            $img = Image::findOrFail($id);
+
+            // Get the path to the image
+            $filePath = public_path($img->image); // assuming $img->image = 'uploads/cars/image.jpg'
+    
+            // Delete the file if it exists
+            if (File::exists($filePath)) {
+                File::delete($filePath);
+            }
+    
+            $data = WorkshopProvider::findOrFail($img->workshop_provider_id);
+            $data->current = $data->current - 1;
+            $data->save();
+
+            // Delete the database record
+            $img->delete();
+    
+            return [
+                'status'  => true,
+                'message' => "Image is removed from list and filesystem successfully!",
+                'data'    => null,
+            ];
+        }catch(Exception $e){
+            return [
+                'status'  => false,
+                'message' => $e->getMessage(),
+            ];
         }
     }
 
