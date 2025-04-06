@@ -360,6 +360,7 @@ class WorkShopController extends Controller
             ]);
 
         } catch (Exception $e) {
+            dd($e->gettMessage);
             return response()->json([
                 'status'  => false,
                 'message' => $e->getMessage(),

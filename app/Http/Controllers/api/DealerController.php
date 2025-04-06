@@ -2,23 +2,26 @@
 namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\CarlistingResource;
+use App\Http\Resources\ImageResource;
+use App\Http\Resources\ShopResource;
+use App\Http\Resources\UserResource;
+use App\Http\Resources\WorkshopResource;
 use App\Models\allUsersModel;
 use App\Models\BodyType;
 use App\Models\BrandModel;
 use App\Models\CarBrand;
 use App\Models\CarDealer;
-use App\Models\WorkshopProvider;
+use App\Models\Image;
 use App\Models\carListingModel;
 use App\Models\ModelYear;
 use App\Models\RegionalSpec;
 use App\Models\Setting;
-use App\Http\Resources\ShopResource;
-use App\Http\Resources\UserResource;
-use App\Http\Resources\CarlistingResource;
-use App\Http\Resources\WorkshopResource;
+use App\Models\WorkshopProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\File;
 
 class DealerController extends Controller
 {
@@ -31,9 +34,9 @@ class DealerController extends Controller
             'password'     => 'required|min:6',
             'lat'          => 'required',
             'lng'          => 'required',
-            'city'          => 'required',
-            'location'          => 'required',
-            'company_name' => 'required'
+            'city'         => 'required',
+            'location'     => 'required',
+            'company_name' => 'required',
         ]);
 
         $user = allUsersModel::create([
@@ -74,9 +77,9 @@ class DealerController extends Controller
                 'status'  => true,
                 'message' => 'Accounted created Successfully!',
                 'data'    => [
-                    "auth_token" => $user->createToken('tokens')->plainTextToken,
-                    "user"       => new UserResource($user),
-                    "company_data" => new ShopResource($user->dealer)
+                    "auth_token"   => $user->createToken('tokens')->plainTextToken,
+                    "user"         => new UserResource($user),
+                    "company_data" => new ShopResource($user->dealer),
                 ],
             ];
         } else {
@@ -177,10 +180,10 @@ class DealerController extends Controller
         return [
             'status'  => true,
             'message' => "Data get successfully!",
-            'data' => [
-                'user' => new UserResource($user),
-                'company_data' =>  new ShopResource($user->dealer),
-            ]
+            'data'    => [
+                'user'         => new UserResource($user),
+                'company_data' => new ShopResource($user->dealer),
+            ],
             // 'data' => new ShopResource($dealer),
         ];
     }
@@ -202,7 +205,7 @@ class DealerController extends Controller
             'status'  => true,
             'message' => "Data get successfully!",
             'data'    => [
-                
+
                 "cars"       => $carListings->items(),
                 "pagination" => [
                     'current_page' => $carListings->currentPage(),
@@ -232,8 +235,8 @@ class DealerController extends Controller
             'status'  => true,
             'message' => "Data get successfully!",
             'data'    => [
-                "user" => new UserResource(auth()->user()),
-                "cars"       => CarlistingResource::collection($carListings) ,
+                "user"       => new UserResource(auth()->user()),
+                "cars"       => CarlistingResource::collection($carListings),
                 "pagination" => [
                     'current_page' => $carListings->currentPage(),
                     'per_page'     => $carListings->perPage(),
@@ -248,49 +251,15 @@ class DealerController extends Controller
     {
         $validatedData = $request->validate([
             "car_type"      => "required|in:New,Imported,Auction,Used",
-            // "listing_title" => "required",
             "listing_type"  => "required",
             "listing_model" => "required",
             "listing_year"  => "required",
             "listing_price" => "required|gt:0",
         ]);
-        ////////// handle images start
-        $listingImages = ['listing_img1', 'listing_img2', 'listing_img3', 'listing_img4', 'listing_img5'];
-
-        // Define the base URL to be removed
-        $baseUrl = env('APP_URL');
-        
-        foreach ($listingImages as $key => $imgField) {
-            // Check if it's a file or a URL string
-            if ($request->hasFile($imgField)) {
-                // Handle file upload
-                $img = $request->file($imgField);
-                $imgName = time() . ($key + 1) . '.' . $img->getClientOriginalExtension();
-                $img->move(public_path('listings'), $imgName);
-                $listingImgPath = 'listings/' . $imgName;
-                $validatedData[$imgField] = $listingImgPath;
-            } elseif ($request->filled($imgField) && filter_var($request->input($imgField), FILTER_VALIDATE_URL)) {
-                // Handle custom direct link (URL)
-                $imgUrl = $request->input($imgField);
-        
-                // Remove the base URL from the image link
-                if (strpos($imgUrl, $baseUrl) === 0) {
-                    $imgUrl = str_replace($baseUrl, '', $imgUrl);
-                }
-        
-                // Store the remaining part of the URL
-                $validatedData[$imgField] = $imgUrl;
-            } else {
-                // Leave unchanged or set empty if needed
-                $validatedData[$imgField] = $existingData[$imgField] ?? ''; // Assuming you have previous data stored
-            }
-        }
-
         $validatedData += [
             'listing_desc'          => $request->listing_desc,
             'user_id'               => auth()->user()->id,
-            'listing_title'          => $request->listing_type . ' ' . $request->listing_model,
-
+            'listing_title'         => $request->listing_type . ' ' . $request->listing_model,
             'features_gear'         => $request->features_gear,
             'features_speed'        => $request->features_speed,
             'features_seats'        => $request->features_seats,
@@ -304,10 +273,12 @@ class DealerController extends Controller
             'body_type'             => $request->body_type,
             'regional_specs'        => $request->regional_specs,
             'vin_number'            => $request->vin_number,
-            'wa_number'             => $request->wa_number, 
+            'wa_number'             => $request->wa_number,
             'contact_number'        => $request->contact_number,
+            'max'                   => 10,
+            'current'               => $request->images ? count($request->images) : 0,
         ];
-       
+
         if ($request->pickup_date) {
             $validatedData['pickup_date'] = $request->pickup_date;
         }
@@ -316,6 +287,24 @@ class DealerController extends Controller
         }
 
         $data = carListingModel::create($validatedData);
+
+        if ($request->images) {
+            $uploadedImages = $request->images;
+
+            foreach ($uploadedImages as $index => $uploadedImage) {
+                if ($index >= $data->max) {
+                    break;
+                }
+
+                $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
+                $uploadedImage->move(public_path('listings'), $imgName);
+                $imagePath = 'listings/' . $imgName;
+
+                $data->images()->create([
+                    'image' => $imagePath,
+                ]);
+            }
+        }
 
         return response()->json([
             'status'  => true,
@@ -333,43 +322,12 @@ class DealerController extends Controller
             "listing_year"  => "required",
             "listing_price" => "required|gt:0",
         ]);
-        
-        $listingImages = ['listing_img1', 'listing_img2', 'listing_img3', 'listing_img4', 'listing_img5'];
-
-        // Define the base URL to be removed
-        $baseUrl = env('APP_URL');
-        
-        foreach ($listingImages as $key => $imgField) {
-            // Check if it's a file or a URL string
-            if ($request->hasFile($imgField)) {
-                // Handle file upload
-                $img = $request->file($imgField);
-                $imgName = time() . ($key + 1) . '.' . $img->getClientOriginalExtension();
-                $img->move(public_path('listings'), $imgName);
-                $listingImgPath = 'listings/' . $imgName;
-                $validatedData[$imgField] = $listingImgPath;
-            } elseif ($request->filled($imgField) && filter_var($request->input($imgField), FILTER_VALIDATE_URL)) {
-                // Handle custom direct link (URL)
-                $imgUrl = $request->input($imgField);
-        
-                // Remove the base URL from the image link
-                if (strpos($imgUrl, $baseUrl) === 0) {
-                    $imgUrl = str_replace($baseUrl, '', $imgUrl);
-                }
-        
-                // Store the remaining part of the URL
-                $validatedData[$imgField] = $imgUrl;
-            } else {
-                // Leave unchanged or set empty if needed
-                $validatedData[$imgField] = $existingData[$imgField] ?? ''; // Assuming you have previous data stored
-            }
-        }
 
         $user = auth()->user();
 
         $validatedData += [
             'listing_desc'          => $request->listing_desc,
-            'listing_title'          => $request->listing_type . ' ' . $request->listing_model,
+            'listing_title'         => $request->listing_type . ' ' . $request->listing_model,
             'features_gear'         => $request->features_gear,
             'features_speed'        => $request->features_speed,
             'features_seats'        => $request->features_seats,
@@ -383,8 +341,8 @@ class DealerController extends Controller
             'body_type'             => $request->body_type ?: '',
             'regional_specs'        => $request->regional_specs ?: '',
             'vin_number'            => $request->vin_number ?: '',
-            'wa_number'             => $request->wa_number ?? '', 
-            'contact_number'        => $request->contact_number?? '',
+            'wa_number'             => $request->wa_number ?? '',
+            'contact_number'        => $request->contact_number ?? '',
         ];
         if ($request->auction_name) {
             $validatedData['auction_name'] = $request->auction_name;
@@ -405,9 +363,100 @@ class DealerController extends Controller
         ];
     }
 
+    public function carUploadImgs(Request $request)
+    {
+        try {
+            $request->validate([
+                'carId'    => 'required',
+                'images.*' => 'image|mimes:jpg,jpeg,png,gif',
+            ]);
+            $data = carListingModel::findOrFail($request->carId);
+            // dd($data->current);
+            if ($data->current + count($request->images) >= $data->max) {
+
+                return response()->json([
+                    'status'  => false,
+                    'message' => "You can't upload more than " . $data->max . " images!",
+                ]);
+            } else {
+                foreach ($request->images as $index => $uploadedImage) {
+
+                    $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
+                    $uploadedImage->move(public_path('listings'), $imgName);
+                    $imagePath = 'listings/' . $imgName;
+
+                    $data->images()->create([
+                        'image' => $imagePath,
+                    ]);
+
+                    $data->current = $data->current + 1;
+                    $data->save();
+                }
+
+                return response()->json([
+                    'status'  => true,
+                    'message' => "Images uploaded successfully!",
+                    'data'    => ImageResource::collection($data->images),
+                ]);
+            }
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+
+    }
+
+
+    public function delImg($id)
+    {
+        try{
+            $img = Image::findOrFail($id);
+
+            // Get the path to the image
+            $filePath = public_path($img->image); // assuming $img->image = 'uploads/cars/image.jpg'
+    
+            // Delete the file if it exists
+            if (File::exists($filePath)) {
+                File::delete($filePath);
+            }
+    
+            $data = carListingModel::findOrFail($img->carlisting_id);
+            $data->current = $data->current - 1;
+            $data->save();
+
+            // Delete the database record
+            $img->delete();
+    
+            return [
+                'status'  => true,
+                'message' => "Image is removed from list and filesystem successfully!",
+                'data'    => null,
+            ];
+        }catch(Exception $e){
+            return [
+                'status'  => false,
+                'message' => $e->getMessage(),
+            ];
+        }
+    }
+
     public function delCar(Request $request)
     {
-        carListingModel::findOrFail($request->list_id)->delete();
+        $car = carListingModel::findOrFail($request->list_id);
+        
+        foreach($car->images as $img){
+            $filePath = public_path($img->image); // assuming $img->image = 'uploads/cars/image.jpg'
+    
+            // Delete the file if it exists
+            if (File::exists($filePath)) {
+                File::delete($filePath);
+            }
+            $img->delete();
+        }
+        $car->delete();
 
         return [
             'status'  => true,
@@ -495,7 +544,6 @@ class DealerController extends Controller
         ];
     }
 
-
     public function updateProfile(Request $request)
     {
         $authUser = auth()->user();
@@ -507,11 +555,11 @@ class DealerController extends Controller
             'email' => [
                 'sometimes',
                 'email',
-                Rule::unique('allusers')->ignore($id)->where(fn ($query) => $query->where('usertype', $usertype)),
+                Rule::unique('allusers')->ignore($id)->where(fn($query) => $query->where('usertype', $usertype)),
             ],
             'phone' => [
                 'sometimes',
-                Rule::unique('allusers')->ignore($id)->where(fn ($query) => $query->where('usertype', $usertype)),
+                Rule::unique('allusers')->ignore($id)->where(fn($query) => $query->where('usertype', $usertype)),
             ],
         ]);
 
@@ -527,7 +575,7 @@ class DealerController extends Controller
 
         // Handle image upload
         if ($request->hasFile('image')) {
-            $image = $request->file('image');
+            $image   = $request->file('image');
             $imgname = time() . '.' . $image->getClientOriginalExtension();
             $image->move(public_path('users'), $imgname);
 
@@ -557,7 +605,7 @@ class DealerController extends Controller
             // For workshop providers
             $workshop = $user->workshop_provider;
 
-            if (!$workshop) {
+            if (! $workshop) {
                 // Create if not exists
                 $workshop = WorkshopProvider::create([
                     'user_id'   => $user->id,

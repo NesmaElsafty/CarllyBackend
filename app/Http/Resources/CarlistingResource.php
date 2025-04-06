@@ -8,27 +8,14 @@ class CarListingResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $baseUrl = env('APP_URL');
+        // $baseUrl = env('APP_URL');
 
-        /*$images = $this->images()
-        ->whereNotNull('image')
-        ->pluck('image')
-        ->map(fn($image) => $baseUrl . '/' . $image)
-        ->toArray();*/
-      //dd($this->listing_img1);
-      $imageKeys = array_filter([
-        $this->listing_img1,
-        $this->listing_img2,
-        $this->listing_img3,
-        $this->listing_img4,
-        $this->listing_img5,
-      ]);
-
-      $images = [];
-
-      foreach($imageKeys as $image){
-          $images[] = $baseUrl .'/'.$image;
-      }
+        // $images = $this->images()
+        //     ->whereNotNull('image')
+        //     ->where('image', '!=', '')
+        //     ->pluck('image')
+        //     ->map(fn($image) => $baseUrl . '/' . $image)
+        //     ->toArray();
 
         $company_name = $this->user->dealer->company_name;
         return [
@@ -39,7 +26,7 @@ class CarListingResource extends JsonResource
             "listing_model"         => $this->listing_model,
             "listing_year"          => $this->listing_year,
             "listing_price"         => $this->listing_price,
-            "images"                => $images,
+            "images"                => ImageResource::collection($this->images),
             'wa_number'             => $this->wa_number,
             'contact_number'        => $this->contact_number,
             "listing_desc"          => $this->listing_desc,
@@ -62,11 +49,13 @@ class CarListingResource extends JsonResource
             "pickup_time"           => $this->pickup_time,
             "updated_at"            => $this->updated_at,
             "created_at"            => $this->created_at,
-            "img1"                  => $this->img1,
-            "img2"                  => $this->img2,
-            "img3"                  => $this->img3,
-            "img4"                  => $this->img4,
-            "img5"                  => $this->img5,
+            'max'                   => $this->max,
+            'current'               => $this->current,
+            // "img1"                  => $this->img1,
+            // "img2"                  => $this->img2,
+            // "img3"                  => $this->img3,
+            // "img4"                  => $this->img4,
+            // "img5"                  => $this->img5,
         ];
     }
 }

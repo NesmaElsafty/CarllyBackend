@@ -17,7 +17,7 @@ class ImageResource extends JsonResource
         $baseurl = env("APP_URL");
         return [
             "id"=> $this->id,
-            "image" => $baseurl . $this->image
+            "image" => $baseurl. $this->image
         ];
     }
 }

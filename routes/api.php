@@ -139,6 +139,9 @@ Route::group(['prefix' => 'dealer', 'middleware' => 'guest'], function () {
         Route::post('addCarListing', [DealerController::class, 'addCarListing']);
         Route::post('editCarListing', [DealerController::class, 'editCarListing']);
         Route::post('delCar', [DealerController::class, 'delCar']);
+        Route::post('carUploadImgs', [DealerController::class, 'carUploadImgs']);
+        Route::delete('delImg/{id}', [DealerController::class, 'delImg']);
+
         Route::post('logout', [DealerController::class, 'logout']);
     });
 });
