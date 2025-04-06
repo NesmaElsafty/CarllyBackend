@@ -41,32 +41,38 @@ class AppServiceProvider extends ServiceProvider
         //     }
         // }
 
-        $spareparts = DB::table('spare_parts')->select('id', 'car_model')->get();
-        foreach ($spareparts as $part) {
-            $models = json_decode($part->car_model, true);
-            
-            if(gettype($models) == 'array'){
-            $modelIds = BrandModel::whereIn('name', $models)->pluck('id')->toArray();
-                foreach($modelIds as $modelId){
-                    DB::table('brand_model_spare_part')->insert([
-                        'brand_model_id' => $modelId,
-                        'spare_part_id' => $part->id,
-                    ]);
-                }
-            }else{
-                // dd($models);
-                $models = json_decode($part->car_model, true);
-                $models = json_decode($models, true);
+    //     DB::table('spare_parts')
+    // ->select('id', 'car_model')
+    // ->orderBy('id')
+    // ->chunk(1000, function ($spareparts) {
+    //     $insertData = [];
 
-                $modelIds = BrandModel::whereIn('name', $models)->pluck('id')->toArray();
-                foreach($modelIds as $modelId){
-                    DB::table('brand_model_spare_part')->insert([
-                        'brand_model_id' => $modelId,
-                        'spare_part_id' => $part->id,
-                    ]);
-                }
-            }
-        }
+    //     foreach ($spareparts as $part) {
+    //         $models = json_decode($part->car_model, true);
+
+    //         if (!is_array($models)) {
+    //             $models = json_decode($models, true);
+    //         }
+
+    //         if (is_array($models)) {
+    //             $modelIds = BrandModel::whereIn('name', $models)->pluck('id')->toArray();
+
+    //             foreach ($modelIds as $modelId) {
+    //                 $insertData[] = [
+    //                     'brand_model_id' => $modelId,
+    //                     'spare_part_id' => $part->id,
+    //                 ];
+    //             }
+    //         }
+    //     }
+
+    //     if (!empty($insertData)) {
+    //         foreach (array_chunk($insertData, 1000) as $chunkedInsert) {
+    //             DB::table('brand_model_spare_part')->insert($chunkedInsert);
+    //         }
+    //     }
+    // });
+
 
     }
 }

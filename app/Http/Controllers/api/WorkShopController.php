@@ -296,7 +296,11 @@ class WorkShopController extends Controller
             // ✅ Assign validated data
             $workshop->workshop_name = $request['workshop_name'];
             $workshop->owner         = $request['owner'] ?? $workshop->owner;
-            $workshop->tax_number    = $request['tax_number'] ?? $workshop->tax_number;
+
+            if($request['tax_number'] != null  || $request['tax_number'] != ''){
+                $workshop->tax_number    =  $workshop->tax_number;
+            }
+            
             $workshop->legal_number  = $request['legal_number'] ?? $workshop->legal_number;
             $workshop->employee      = $request['employee'] ?? $workshop->employee;
 
@@ -312,7 +316,7 @@ class WorkShopController extends Controller
 
             if ($request->hasFile('images')) {
                 $uploadedImages = $request->file('images');
-                $images         = $workshop_provider->images()->take(5)->get(); // Get first 5 placeholder records
+                $images         = $workshop->images()->take(5)->get(); // Get first 5 placeholder records
     
                 foreach ($uploadedImages as $index => $uploadedImage) {
                     if ($index >= 5) {
