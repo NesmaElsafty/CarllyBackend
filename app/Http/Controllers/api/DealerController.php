@@ -3,6 +3,7 @@ namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CarlistingResource;
+use App\Http\Resources\ImageResource;
 use App\Http\Resources\ShopResource;
 use App\Http\Resources\UserResource;
 use App\Http\Resources\WorkshopResource;
@@ -11,17 +12,18 @@ use App\Models\BodyType;
 use App\Models\BrandModel;
 use App\Models\CarBrand;
 use App\Models\CarDealer;
+use App\Models\Image;
 use App\Models\carListingModel;
 use App\Models\ModelYear;
 use App\Models\RegionalSpec;
 use App\Models\Setting;
-use App\Models\Image;
 use App\Models\WorkshopProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\File;
 
-class DealerController extends Controller 
+class DealerController extends Controller
 {
     public function register(Request $request)
     {
@@ -249,7 +251,6 @@ class DealerController extends Controller
     {
         $validatedData = $request->validate([
             "car_type"      => "required|in:New,Imported,Auction,Used",
-            // "listing_title" => "required",
             "listing_type"  => "required",
             "listing_model" => "required",
             "listing_year"  => "required",
@@ -306,6 +307,8 @@ class DealerController extends Controller
             'vin_number'            => $request->vin_number,
             'wa_number'             => $request->wa_number,
             'contact_number'        => $request->contact_number,
+            'max'                   => 10,
+            'current'               => $request->images ? count($request->images) : 0,
         ];
 
         if ($request->pickup_date) {
@@ -317,30 +320,19 @@ class DealerController extends Controller
 
         $data = carListingModel::create($validatedData);
 
-        // Step 1: Create 5 placeholder images
-        for ($i = 0; $i < 5; $i++) {
-            Image::create([
-                'image'                => null, // or 'icons/notfound.png'
-                'carlisting_id' => $data->id,
-            ]);
-        }
-
-        // Step 2: Replace the placeholders with actual uploaded images (max 5)
-        if ($request->hasFile('images')) {
-            $uploadedImages = $request->file('images');
-            $images         = $data->images()->take(10)->get(); // Get first 5 placeholder records
+        if ($request->images) {
+            $uploadedImages = $request->images;
 
             foreach ($uploadedImages as $index => $uploadedImage) {
-                if ($index >= 5) {
+                if ($index >= $data->max) {
                     break;
                 }
-                // Safety check
 
                 $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
                 $uploadedImage->move(public_path('listings'), $imgName);
-                $imagePath = 'listing/' . $imgName;
+                $imagePath = 'listings/' . $imgName;
 
-                $images[$index]->update([
+                $data->images()->create([
                     'image' => $imagePath,
                 ]);
             }
@@ -394,29 +386,6 @@ class DealerController extends Controller
         //     }
         // }
 
-        // Step 1: Get the existing 10 images for this carlisting
-        if ($request->hasFile('images')) {
-            $carlisting     = carListingModel::find($request->carId);
-            // dd($carlisting);
-            $uploadedImages = $request->file('images');
-            $images         = $carlisting->images()->take(10)->orderBy('id', 'DESC')->get(); // Get first 5 placeholder records
-
-            foreach ($uploadedImages as $index => $uploadedImage) {
-                if ($index >= 10) {
-                    break;
-                }
-                // Safety check
-
-                $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
-                $uploadedImage->move(public_path('listings'), $imgName);
-                $imagePath = 'listing/' . $imgName;
-
-                $images[$index]->update([
-                    'image' => $imagePath,
-                ]);
-            }
-        }
-
         $user = auth()->user();
 
         $validatedData += [
@@ -457,9 +426,100 @@ class DealerController extends Controller
         ];
     }
 
+    public function carUploadImgs(Request $request)
+    {
+        try {
+            $request->validate([
+                'carId'    => 'required',
+                'images.*' => 'image|mimes:jpg,jpeg,png,gif',
+            ]);
+            $data = carListingModel::findOrFail($request->carId);
+            // dd($data->current);
+            if ($data->current + count($request->images) >= $data->max) {
+
+                return response()->json([
+                    'status'  => false,
+                    'message' => "You can't upload more than " . $data->max . " images!",
+                ]);
+            } else {
+                foreach ($request->images as $index => $uploadedImage) {
+
+                    $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
+                    $uploadedImage->move(public_path('listings'), $imgName);
+                    $imagePath = 'listings/' . $imgName;
+
+                    $data->images()->create([
+                        'image' => $imagePath,
+                    ]);
+
+                    $data->current = $data->current + 1;
+                    $data->save();
+                }
+
+                return response()->json([
+                    'status'  => true,
+                    'message' => "Images uploaded successfully!",
+                    'data'    => ImageResource::collection($data->images),
+                ]);
+            }
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+
+    }
+
+
+    public function delImg($id)
+    {
+        try{
+            $img = Image::findOrFail($id);
+
+            // Get the path to the image
+            $filePath = public_path($img->image); // assuming $img->image = 'uploads/cars/image.jpg'
+    
+            // Delete the file if it exists
+            if (File::exists($filePath)) {
+                File::delete($filePath);
+            }
+    
+            $data = carListingModel::findOrFail($img->carlisting_id);
+            $data->current = $data->current - 1;
+            $data->save();
+
+            // Delete the database record
+            $img->delete();
+    
+            return [
+                'status'  => true,
+                'message' => "Image is removed from list and filesystem successfully!",
+                'data'    => null,
+            ];
+        }catch(Exception $e){
+            return [
+                'status'  => false,
+                'message' => $e->getMessage(),
+            ];
+        }
+    }
+
     public function delCar(Request $request)
     {
-        carListingModel::findOrFail($request->list_id)->delete();
+        $car = carListingModel::findOrFail($request->list_id);
+        
+        foreach($car->images as $img){
+            $filePath = public_path($img->image); // assuming $img->image = 'uploads/cars/image.jpg'
+    
+            // Delete the file if it exists
+            if (File::exists($filePath)) {
+                File::delete($filePath);
+            }
+            $img->delete();
+        }
+        $car->delete();
 
         return [
             'status'  => true,
