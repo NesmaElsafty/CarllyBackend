@@ -300,7 +300,7 @@ class WorkShopController extends Controller
             if($request['tax_number'] != null  || $request['tax_number'] != ''){
                 $workshop->tax_number    =  $workshop->tax_number;
             }
-            
+
             $workshop->legal_number  = $request['legal_number'] ?? $workshop->legal_number;
             $workshop->employee      = $request['employee'] ?? $workshop->employee;
 
