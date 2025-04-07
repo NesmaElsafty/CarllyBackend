@@ -327,6 +327,8 @@ class WorkShopController extends Controller
 
     public function wsUploadImgs(Request $request)
     {
+        config(['filesystems.disks.r2.throw' => true]);
+
         try {
             $request->validate([
                 'workshop_id' => 'required',
@@ -344,8 +346,10 @@ class WorkShopController extends Controller
                 foreach ($request->images as $index => $uploadedImage) {
                     $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
                 
-                    $path = Storage::disk('r2')->putFileAs('workshops', $uploadedImage, $imgName);
-                
+                    $path = Storage::disk('r2')->put(
+                        'workshops/' . $imgName,
+                        file_get_contents($uploadedImage)
+                    );                
                     if (!$path) {
                         return response()->json([
                             'status'  => false,
