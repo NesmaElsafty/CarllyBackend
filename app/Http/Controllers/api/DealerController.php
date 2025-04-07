@@ -255,8 +255,6 @@ class DealerController extends Controller
             "listing_model" => "required",
             "listing_year"  => "required",
             "listing_price" => "required|gt:0",
-            'images.*'      => 'image|mimes:jpg,jpeg,png,gif', // Optional: limit file size to 2MB per image
-
         ]);
         $validatedData += [
             'listing_desc'          => $request->listing_desc,
