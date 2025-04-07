@@ -42,7 +42,7 @@ class WorkShopController extends Controller
             'city'          => 'max:245',
             'lat'           => 'max:245',
             'lng'           => 'max:245',
-            'tax_number'    => 'max:245',
+            'tax_number'    => 'nullable|max:245',
             'legal_number'  => 'max:245',
             'employee'      => 'max:245',
             'workshop_logo' => 'nullable|image|mimes:png,jpeg,gif,jpg',
@@ -247,7 +247,7 @@ class WorkShopController extends Controller
             $validatedData = $request->validate([
                 'workshop_name' => 'required|string',
                 'owner'         => 'required|string',
-                'tax_number'    => 'required|string',
+                'tax_number'    => 'nullable|string',
                 'legal_number'  => 'required|string',
                 'employee'      => 'required|integer',
                 'categories'    => ['required', 'array', 'min:1'],
@@ -264,7 +264,7 @@ class WorkShopController extends Controller
             $workshop->owner         = $request['owner'] ?? $workshop->owner;
 
             if($request['tax_number'] != null  || $request['tax_number'] != ''){
-                $workshop->tax_number    =  $workshop->tax_number;
+                $workshop->tax_number    =  $request->tax_number;
             }
 
             $workshop->legal_number  = $request['legal_number'] ?? $workshop->legal_number;
