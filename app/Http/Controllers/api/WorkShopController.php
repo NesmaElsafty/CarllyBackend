@@ -21,8 +21,9 @@ use App\Models\WorkshopService;
 use App\Models\WorkshopServices;
 use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 // Add this at the top
 
@@ -87,11 +88,11 @@ class WorkShopController extends Controller
             "tax_number"    => $request->tax_number,
             "legal_number"  => $request->legal_number,
             "employee"      => $request->employee,
-            'max'                   => 5,
+            'max'           => 5,
         ];
 
         $workshop_provider = WorkshopProvider::create($wsData);
-        
+
         if ($request->images) {
             $uploadedImages = $request->images;
 
@@ -100,14 +101,24 @@ class WorkShopController extends Controller
                     break;
                 }
                 $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
-                $uploadedImage->move(public_path('workshops'), $imgName);
+                // $uploadedImage->move(public_path('workshops'), $imgName);
+                // $imagePath = 'workshops/' . $imgName;
+
+                $path = Storage::disk('r2')->putFileAs(
+                    'workshops',
+                    $uploadedImage,
+                    $imgName
+                );
+
                 $imagePath = 'workshops/' . $imgName;
+
+                $url = 'https://cdn.carllymotors.com/' . $path;
 
                 $workshop_provider->images()->create([
                     'image' => $imagePath,
                 ]);
-
             }
+
             $workshop_provider->current = count($workshop_provider->images);
             $workshop_provider->save();
         }
@@ -263,12 +274,12 @@ class WorkShopController extends Controller
             $workshop->workshop_name = $request['workshop_name'];
             $workshop->owner         = $request['owner'] ?? $workshop->owner;
 
-            if($request['tax_number'] != null  || $request['tax_number'] != ''){
-                $workshop->tax_number    =  $workshop->tax_number;
+            if ($request['tax_number'] != null || $request['tax_number'] != '') {
+                $workshop->tax_number = $workshop->tax_number;
             }
 
-            $workshop->legal_number  = $request['legal_number'] ?? $workshop->legal_number;
-            $workshop->employee      = $request['employee'] ?? $workshop->employee;
+            $workshop->legal_number = $request['legal_number'] ?? $workshop->legal_number;
+            $workshop->employee     = $request['employee'] ?? $workshop->employee;
 
             // ✅ Handle file upload (if provided)
             if ($request->hasFile('workshop_logo')) {
@@ -279,7 +290,7 @@ class WorkShopController extends Controller
             }
 
             $workshop->save();
-            
+
             //  Sync brands and categories (only if they exist in DB)
             $workshop->brands()->sync($request['brands']);
             $workshop->categories()->sync($request['categories']);
@@ -318,11 +329,11 @@ class WorkShopController extends Controller
     {
         try {
             $request->validate([
-                'workshop_id'    => 'required',
-                'images.*' => 'image|mimes:jpg,jpeg,png,gif',
+                'workshop_id' => 'required',
+                'images.*'    => 'image|mimes:jpg,jpeg,png,gif',
             ]);
             $data = WorkshopProvider::findOrFail($request->workshop_id);
-            
+
             if ($data->current + count($request->images) > $data->max) {
 
                 return response()->json([
@@ -331,18 +342,28 @@ class WorkShopController extends Controller
                 ]);
             } else {
                 foreach ($request->images as $index => $uploadedImage) {
-
                     $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
-                    $uploadedImage->move(public_path('workshops'), $imgName);
+                
+                    $path = Storage::disk('r2')->putFileAs('workshops', $uploadedImage, $imgName);
+                
+                    if (!$path) {
+                        return response()->json([
+                            'status'  => false,
+                            'message' => "Failed to upload image: $imgName",
+                        ]);
+                    }
+                
                     $imagePath = 'workshops/' . $imgName;
-
+                    $url = 'https://cdn.carllymotors.com/' . $path;
+                
                     $data->images()->create([
                         'image' => $imagePath,
                     ]);
-
+                
                     $data->current = $data->current + 1;
                     $data->save();
                 }
+                
 
                 return response()->json([
                     'status'  => true,
@@ -362,30 +383,30 @@ class WorkShopController extends Controller
 
     public function wsDelImg($id)
     {
-        try{
+        try {
             $img = Image::findOrFail($id);
 
-            // Get the path to the image
+                                                  // Get the path to the image
             $filePath = public_path($img->image); // assuming $img->image = 'uploads/cars/image.jpg'
-    
+
             // Delete the file if it exists
             if (File::exists($filePath)) {
                 File::delete($filePath);
             }
-    
-            $data = WorkshopProvider::findOrFail($img->workshop_provider_id);
+
+            $data          = WorkshopProvider::findOrFail($img->workshop_provider_id);
             $data->current = $data->current - 1;
             $data->save();
 
             // Delete the database record
             $img->delete();
-    
+
             return [
                 'status'  => true,
                 'message' => "Image is removed from list and filesystem successfully!",
                 'data'    => null,
             ];
-        }catch(Exception $e){
+        } catch (Exception $e) {
             return [
                 'status'  => false,
                 'message' => $e->getMessage(),
