@@ -88,7 +88,6 @@ class WorkShopController extends Controller
             "legal_number"  => $request->legal_number,
             "employee"      => $request->employee,
             'max'                   => 5,
-            'current'               => $request->images ? count($request->images) : 0,
         ];
 
         $workshop_provider = WorkshopProvider::create($wsData);
@@ -107,7 +106,10 @@ class WorkShopController extends Controller
                 $workshop_provider->images()->create([
                     'image' => $imagePath,
                 ]);
+
             }
+            $workshop_provider->current = count($workshop_provider->images);
+            $workshop_provider->save();
         }
 
         if ($request->brands) {

@@ -255,6 +255,8 @@ class DealerController extends Controller
             "listing_model" => "required",
             "listing_year"  => "required",
             "listing_price" => "required|gt:0",
+            'images.*'      => 'image|mimes:jpg,jpeg,png,gif', // Optional: limit file size to 2MB per image
+
         ]);
         $validatedData += [
             'listing_desc'          => $request->listing_desc,
@@ -276,7 +278,6 @@ class DealerController extends Controller
             'wa_number'             => $request->wa_number,
             'contact_number'        => $request->contact_number,
             'max'                   => 10,
-            'current'               => $request->images ? count($request->images) : 0,
         ];
 
         if ($request->pickup_date) {
@@ -304,6 +305,8 @@ class DealerController extends Controller
                     'image' => $imagePath,
                 ]);
             }
+            $data->current = count($data->images);
+            $data->save();
         }
 
         return response()->json([
