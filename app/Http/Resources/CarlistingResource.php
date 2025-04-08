@@ -8,15 +8,6 @@ class CarListingResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        // $baseUrl = env('APP_URL');
-
-        // $images = $this->images()
-        //     ->whereNotNull('image')
-        //     ->where('image', '!=', '')
-        //     ->pluck('image')
-        //     ->map(fn($image) => $baseUrl . '/' . $image)
-        //     ->toArray();
-
         $company_name = $this->user->dealer->company_name;
         return [
             "id"                    => $this->id,

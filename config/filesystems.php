@@ -56,17 +56,20 @@ return [
             'throw' => false,
         ],
         
-        'r2' => [
-        'driver' => 's3',
-        'key' => env('AWS_ACCESS_KEY_ID'),
-        'secret' => env('AWS_SECRET_ACCESS_KEY'),
-        'region' => env('AWS_DEFAULT_REGION', 'auto'),
-        'bucket' => env('AWS_BUCKET'),
-        'endpoint' => env('AWS_ENDPOINT'),
-        'use_path_style_endpoint' => true,
+       'r2' => [
+            'driver' => 's3',
+            'key' => env('CLOUDFLARE_R2_ACCESS_KEY_ID'),
+            'secret' => env('CLOUDFLARE_R2_SECRET_ACCESS_KEY'),
+            'region' => 'us-east-1', // R2 doesn't care, but Laravel expects it
+            'bucket' => env('CLOUDFLARE_R2_BUCKET'),
+            'url' => env('CLOUDFLARE_R2_URL'),
+            'endpoint' => env('CLOUDFLARE_R2_ENDPOINT'),
+            'visibility' => 'private', // أو public لو هتعرض بدون توقيع
+            'use_path_style_endpoint' => env('CLOUDFLARE_R2_USE_PATH_STYLE_ENDPOINT', false),
+            'throw' => false,
         ],
 
-    ],
+
 
     /*
     |--------------------------------------------------------------------------
@@ -82,5 +85,5 @@ return [
     'links' => [
         public_path('storage') => storage_path('app/public'),
     ],
-
+    ]
 ];

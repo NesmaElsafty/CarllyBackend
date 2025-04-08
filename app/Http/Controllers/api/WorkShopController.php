@@ -69,7 +69,11 @@ class WorkShopController extends Controller
         if ($request->hasFile('workshop_logo')) {
             $img1     = $request->file('workshop_logo');
             $imgname1 = time() . '.' . $img1->getClientOriginalExtension();
-            $img1->move(public_path('workshops'), $imgname1);
+
+            // $img1->move(public_path('workshops'), $imgname1);
+            
+            $path = Storage::disk('r2')->put('workshops/' . $imgname1, file_get_contents($img1));   
+
             $company_img = 'workshops/' . $imgname1;
             $user->update(['image' => $company_img]);
         } else {
@@ -101,18 +105,11 @@ class WorkShopController extends Controller
                     break;
                 }
                 $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
-                // $uploadedImage->move(public_path('workshops'), $imgName);
-                // $imagePath = 'workshops/' . $imgName;
-
-                $path = Storage::disk('r2')->putFileAs(
-                    'workshops',
-                    $uploadedImage,
-                    $imgName
-                );
-
                 $imagePath = 'workshops/' . $imgName;
 
-                $url = 'https://cdn.carllymotors.com/' . $path;
+                $path = Storage::disk('r2')->put('workshops/' . $imgName, file_get_contents($uploadedImage));   
+
+                $url = env('CLOUDFLARE_R2_URL') . $path;
 
                 $workshop_provider->images()->create([
                     'image' => $imagePath,
@@ -285,7 +282,9 @@ class WorkShopController extends Controller
             if ($request->hasFile('workshop_logo')) {
                 $img1     = $request->file('workshop_logo');
                 $imgname1 = time() . '.' . $img1->getClientOriginalExtension();
-                $img1->move(public_path('workshops'), $imgname1);
+                
+                $path = Storage::disk('r2')->put('workshops/' . $imgname1, file_get_contents($img1));   
+
                 $workshop->workshop_logo = 'workshops/' . $imgname1;
             }
 
@@ -317,7 +316,7 @@ class WorkShopController extends Controller
             ]);
 
         } catch (Exception $e) {
-            dd($e->gettMessage);
+            dd($e->getMessage());
             return response()->json([
                 'status'  => false,
                 'message' => $e->getMessage(),
@@ -345,11 +344,14 @@ class WorkShopController extends Controller
             } else {
                 foreach ($request->images as $index => $uploadedImage) {
                     $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
-                
+                    $imagePath = 'workshops/' . $imgName;
+                    
                     $path = Storage::disk('r2')->put(
                         'workshops/' . $imgName,
                         file_get_contents($uploadedImage)
-                    );                
+                    );    
+                    $url = env('CLOUDFLARE_R2_URL') . $path;
+
                     if (!$path) {
                         return response()->json([
                             'status'  => false,
@@ -357,8 +359,6 @@ class WorkShopController extends Controller
                         ]);
                     }
                 
-                    $imagePath = 'workshops/' . $imgName;
-                    $url = 'https://cdn.carllymotors.com/' . $path;
                 
                     $data->images()->create([
                         'image' => $imagePath,
@@ -367,8 +367,6 @@ class WorkShopController extends Controller
                     $data->current = $data->current + 1;
                     $data->save();
                 }
-                
-
                 return response()->json([
                     'status'  => true,
                     'message' => "Images uploaded successfully!",
@@ -390,12 +388,12 @@ class WorkShopController extends Controller
         try {
             $img = Image::findOrFail($id);
 
-                                                  // Get the path to the image
-            $filePath = public_path($img->image); // assuming $img->image = 'uploads/cars/image.jpg'
+            // Get the path to the image
+            $path = public_path($img->image); // assuming $img->image = 'uploads/cars/image.jpg'
 
             // Delete the file if it exists
-            if (File::exists($filePath)) {
-                File::delete($filePath);
+            if (Storage::disk('r2')->exists($path)) {
+                Storage::disk('r2')->delete($path);
             }
 
             $data          = WorkshopProvider::findOrFail($img->workshop_provider_id);

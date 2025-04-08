@@ -51,7 +51,9 @@ class ShopController extends Controller
         if($request->hasFile('company_img')) {
             $img1 = $request->file('company_img');
            $imgname1 = time() . '.' . $img1->getClientOriginalExtension();
-           $img1->move(public_path('dealers'), $imgname1);
+           
+           $path = Storage::disk('r2')->put('dealers/' . $imgname1, file_get_contents($img1));   
+
            $company_img = 'dealers/'.$imgname1;
            $cData['company_img']=$company_img;
 
