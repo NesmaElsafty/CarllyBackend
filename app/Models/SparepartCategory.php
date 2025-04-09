@@ -19,4 +19,9 @@ class SparepartCategory extends Model
     public function getImageAttribute($val) {
         return ($val)?asset($val):asset('icon/sparepart.jpg');
     }
+
+    public function spareParts()
+{
+    return $this->belongsToMany(SparePart::class, 'spare_part_sparepart_category', 'sparepart_category_id', 'spare_part_id');
+}
 }

@@ -28,4 +28,10 @@ class SparePart extends Model
     public function category() {
         return $this->belongsTo(SparepartCategory::class,'category_id');
     }
+
+    public function categories()
+{
+    return $this->belongsToMany(SparepartCategory::class, 'spare_part_sparepart_category', 'spare_part_id', 'category_id');
+}
+
 }   
