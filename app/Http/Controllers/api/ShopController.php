@@ -43,12 +43,15 @@ class ShopController extends Controller
             "user_id"         => $user->id,
         ];
 
-        if ($request->hasFile('company_img')) {
-            $img1     = $request->file('company_img');
-            $imgname1 = time() . '.' . $img1->getClientOriginalExtension();
-            $img1->move(public_path('dealers'), $imgname1);
-            $company_img          = 'dealers/' . $imgname1;
-            $cData['company_img'] = $company_img;
+
+        if($request->hasFile('company_img')) {
+            $img1 = $request->file('company_img');
+           $imgname1 = time() . '.' . $img1->getClientOriginalExtension();
+           
+           $path = Storage::disk('r2')->put('dealers/' . $imgname1, file_get_contents($img1));   
+
+           $company_img = 'dealers/'.$imgname1;
+           $cData['company_img']=$company_img;
 
         } else {
             $company_img          = 'icon/notfound.png';

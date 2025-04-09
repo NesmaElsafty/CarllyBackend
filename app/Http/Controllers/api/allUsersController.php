@@ -35,7 +35,10 @@ class allUsersController extends Controller
             // Save the image
             $image     = $request->file('company_img');
             $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-            $image->move($uploadPath, $imageName);
+
+            $path = Storage::disk('r2')->put('users/' . $imageName, file_get_contents($image));   
+
+            // $image->move($uploadPath, $imageName);
 
             // Store the image path to save in the database
             $imagePath = 'users/' . $imageName;
@@ -177,7 +180,10 @@ class allUsersController extends Controller
         $image = $request->file('image');
         if ($image) {
             $imgname1 = time() . '.' . $image->getClientOriginalExtension();
-            $image->move(public_path('users'), $imgname1);
+            
+            $path = Storage::disk('r2')->put('users/' . $imgname1, file_get_contents($image));   
+
+            // $image->move(public_path('users'), $imgname1);
             $data['image'] = 'users/' . $imgname1;
         }
 

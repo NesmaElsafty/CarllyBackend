@@ -22,6 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 
 class DealerController extends Controller
 {
@@ -60,7 +61,8 @@ class DealerController extends Controller
         if ($request->hasFile('company_img')) {
             $img1     = $request->file('company_img');
             $imgname1 = time() . '.' . $img1->getClientOriginalExtension();
-            $img1->move(public_path('dealers'), $imgname1);
+            $path = Storage::disk('r2')->put('dealers/' . $imgname1, file_get_contents($img1));   
+
             $company_img          = 'dealers/' . $imgname1;
             $cData['company_img'] = $company_img;
 
@@ -296,7 +298,10 @@ class DealerController extends Controller
                 }
 
                 $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
-                $uploadedImage->move(public_path('listings'), $imgName);
+
+                $path = Storage::disk('r2')->put('listings/' . $imgName, file_get_contents($uploadedImage));   
+                
+                // $uploadedImage->move(public_path('listings'), $imgName);
                 $imagePath = 'listings/' . $imgName;
 
                 $data->images()->create([
@@ -381,7 +386,9 @@ class DealerController extends Controller
                 foreach ($request->images as $index => $uploadedImage) {
 
                     $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
-                    $uploadedImage->move(public_path('listings'), $imgName);
+                    $path = Storage::disk('r2')->put('listings/' . $imgName, file_get_contents($uploadedImage));   
+
+                    // $uploadedImage->move(public_path('listings'), $imgName);
                     $imagePath = 'listings/' . $imgName;
 
                     $data->images()->create([
@@ -415,11 +422,12 @@ class DealerController extends Controller
             $img = Image::findOrFail($id);
 
             // Get the path to the image
-            $filePath = public_path($img->image); // assuming $img->image = 'uploads/cars/image.jpg'
+            $path = public_path($img->image); // assuming $img->image = 'uploads/cars/image.jpg'
     
             // Delete the file if it exists
-            if (File::exists($filePath)) {
-                File::delete($filePath);
+            // Delete the file if it exists
+            if (Storage::disk('r2')->exists($path)) {
+                Storage::disk('r2')->delete($path);
             }
     
             $data = carListingModel::findOrFail($img->carlisting_id);
@@ -450,9 +458,11 @@ class DealerController extends Controller
             $filePath = public_path($img->image); // assuming $img->image = 'uploads/cars/image.jpg'
     
             // Delete the file if it exists
-            if (File::exists($filePath)) {
-                File::delete($filePath);
+
+            if (Storage::disk('r2')->exists($filePath)) {
+                Storage::disk('r2')->delete($filePath);
             }
+
             $img->delete();
         }
         $car->delete();

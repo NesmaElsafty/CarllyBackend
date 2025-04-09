@@ -13,13 +13,13 @@ class WorkshopResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $baseUrl = env('APP_URL');
+        $baseUrl = env('CLOUDFLARE_R2_URL');
         
         if($this->workshop_logo == null){
             $logo = $baseUrl.'/icon/notfound.png';
         }else{
             // $logo = $this->workshop_logo;
-            $logo = $baseUrl .'/'. $this->workshop_logo;
+            $logo = $baseUrl . $this->workshop_logo;
         }
         
         return [

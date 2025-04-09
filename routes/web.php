@@ -63,7 +63,10 @@ Route::get('/', function () {
 // Route::post('/wizostamp/login', [adminAuthController::class, 'adminLoginF'])->name('loginpost');;
 ////////// for admin panel end
 
-
+Route::get('/r2-test', function () {
+    $success = Storage::disk('r2')->put('test.txt', 'Hello R2!');    ;
+    return $success ? '✅ Success' : '❌ Failed';
+});
 
 
 //////////////////////////////////////////////////////////////////////////

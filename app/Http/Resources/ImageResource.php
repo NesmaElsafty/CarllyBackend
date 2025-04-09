@@ -14,7 +14,7 @@ class ImageResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $baseurl = env("APP_URL");
+        $baseurl = env('CLOUDFLARE_R2_URL');
         return [
             "id"=> $this->id,
             "image" => $baseurl . $this->image

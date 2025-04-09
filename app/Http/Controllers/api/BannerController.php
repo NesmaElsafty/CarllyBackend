@@ -59,7 +59,10 @@ class BannerController extends Controller
         try {
             $img     = $request->file('image');
             $imgName = time() . '.' . $img->getClientOriginalExtension();
-            $img->move(public_path('banner'), $imgName);
+            $path = Storage::disk('r2')->put('banner/' . $imgName, file_get_contents($img));   
+
+
+            // $img->move(public_path('banner'), $imgName);
             $bannerImg           = 'banner/' . $imgName;
 
             // Create a new banner entry in the database
@@ -119,11 +122,19 @@ class BannerController extends Controller
             if ($request->hasFile('image')) {
                 // Delete the old image if exists
                 if ($banner->image) {
-                    Storage::disk('public')->delete($banner->image);
+                    $path = public_path($banner->image);
+
+                    if (Storage::disk('r2')->exists($path)) {
+                        Storage::disk('r2')->delete($path);
+                    }
+
+                    // Storage::disk('public')->delete($banner->image);
                 }
                 $img     = $request->file('image');
                 $imgName = time() . '.' . $img->getClientOriginalExtension();
-                $img->move(public_path('banner'), $imgName);
+                $path = Storage::disk('r2')->put('banner/' . $imgName, file_get_contents($img));   
+
+                // $img->move(public_path('banner'), $imgName);
                 $bannerImg           = 'banner/' . $imgName;
                  $updateData['image'] = $bannerImg;
             }
@@ -150,6 +161,11 @@ class BannerController extends Controller
     public function destroy(Banner $banner)
     {
         try {
+            $path = public_path($banner->image);    
+            if (Storage::disk('r2')->exists($path)) {
+                Storage::disk('r2')->delete($path);
+            }
+
             $banner->delete();
 
             return response()->json([
