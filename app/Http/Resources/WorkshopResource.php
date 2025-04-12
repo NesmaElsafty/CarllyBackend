@@ -16,7 +16,7 @@ class WorkshopResource extends JsonResource
         $baseUrl = env('CLOUDFLARE_R2_URL');
         
         if($this->workshop_logo == null){
-            $logo = $baseUrl.'/icon/notfound.png';
+            $logo = $baseUrl.'/workshopNotFound.png';
         }else{
             // $logo = $this->workshop_logo;
             $logo = $baseUrl . $this->workshop_logo;
@@ -26,6 +26,11 @@ class WorkshopResource extends JsonResource
             'id'            => $this->id,
             'logo'          => $logo,
             'owner'         => $this->owner,
+            'location'         => $this->user->location,
+            'city'         => $this->user->city,
+            'lat'         => $this->user->lat,
+            'lng'         => $this->user->lng,
+            'phone'         => $this->user->phone,
             'workshop_name' => $this->workshop_name,
             'employee'      => $this->employee,
             'tax_number'    => $this->tax_number,
@@ -34,7 +39,8 @@ class WorkshopResource extends JsonResource
             'updated_at'    => $this->updated_at,
             'max'           => $this->max,
             'current'       => $this->current,
-            'images'          => ImageResource::collection($this->images),
+            // 'user'          => new UserResource($this->user),
+            'images'        => ImageResource::collection($this->images),
             'categories'    => WorkshopCategoryResource::collection($this->categories) ?? '',
             'brands'        => BrandResource::collection($this->brands) ?? '',
             'days'          => WorkshopDayResource::collection($this->days) ?? ''            

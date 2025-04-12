@@ -415,17 +415,13 @@ class DealerController extends Controller
 
     }
 
-
     public function delImg($id)
     {
-        try{
+        try {
             $img = Image::findOrFail($id);
-
-            // Get the path to the image
-            $path = public_path($img->image); // assuming $img->image = 'uploads/cars/image.jpg'
     
-            // Delete the file if it exists
-            // Delete the file if it exists
+            $path = $img->image; // استخدم المسار النسبي داخل الـ bucket فقط
+    
             if (Storage::disk('r2')->exists($path)) {
                 Storage::disk('r2')->delete($path);
             }
@@ -433,8 +429,7 @@ class DealerController extends Controller
             $data = carListingModel::findOrFail($img->carlisting_id);
             $data->current = $data->current - 1;
             $data->save();
-
-            // Delete the database record
+    
             $img->delete();
     
             return [
@@ -442,13 +437,15 @@ class DealerController extends Controller
                 'message' => "Image is removed from list and filesystem successfully!",
                 'data'    => null,
             ];
-        }catch(Exception $e){
+        } catch (Exception $e) {
             return [
                 'status'  => false,
                 'message' => $e->getMessage(),
             ];
         }
     }
+    
+    
 
     public function delCar(Request $request)
     {
