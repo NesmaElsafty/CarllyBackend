@@ -11,10 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('years', function (Blueprint $table) {
-            $table->id();
-            $table->string('year');
-            $table->timestamps();
+        Schema::table('workshop_providers', function (Blueprint $table) {
+            //
+            $table->string('whatsapp_number')->nullable();
         });
     }
 
@@ -23,6 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('years');
+        Schema::table('workshop_providers', function (Blueprint $table) {
+            //
+        });
     }
 };

@@ -31,6 +31,7 @@ class WorkshopResource extends JsonResource
             'lat'         => $this->user->lat,
             'lng'         => $this->user->lng,
             'phone'         => $this->user->phone,
+            'whatsapp_number'         => $this->whatsapp_number,
             'workshop_name' => $this->workshop_name,
             'employee'      => $this->employee,
             'tax_number'    => $this->tax_number,

@@ -32,24 +32,25 @@ class WorkShopController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'fname'         => 'required',
-            'lname'         => 'required',
-            "email"         => 'required|email|unique:allusers,email,NULL,id,userType,workshop_provider',
-            "phone"         => 'required|unique:allusers,phone,NULL,id,userType,workshop_provider',
-            'password'      => 'required|min:6',
-            'workshop_name' => 'required',
-            'owner'         => 'max:245',
-            'location'      => 'max:245',
-            'city'          => 'max:245',
-            'lat'           => 'max:245',
-            'lng'           => 'max:245',
-            'tax_number'    => 'nullable|max:245',
-            'legal_number'  => 'max:245',
-            'employee'      => 'max:245',
-            'workshop_logo' => 'nullable|image|mimes:png,jpeg,gif,jpg',
+            'fname'           => 'required',
+            'lname'           => 'required',
+            "email"           => 'required|email|unique:allusers,email,NULL,id,userType,workshop_provider',
+            "phone"           => 'required|unique:allusers,phone,NULL,id,userType,workshop_provider',
+            'password'        => 'required|min:6',
+            'workshop_name'   => 'required',
+            'owner'           => 'max:245',
+            'location'        => 'max:245',
+            'city'            => 'max:245',
+            'lat'             => 'max:245',
+            'lng'             => 'max:245',
+            'tax_number'      => 'nullable|max:245',
+            'legal_number'    => 'max:245',
+            'employee'        => 'max:245',
+            'whatsapp_number' => 'max:245',
+            'workshop_logo'   => 'nullable|image|mimes:png,jpeg,gif,jpg',
             // Image array validation
-            'images'        => 'nullable|array',
-            'images.*'      => 'image|mimes:jpg,jpeg,png,gif', // Optional: limit file size to 2MB per image
+            'images'          => 'nullable|array',
+            'images.*'        => 'image|mimes:jpg,jpeg,png,gif', // Optional: limit file size to 2MB per image
 
         ]);
 
@@ -71,8 +72,8 @@ class WorkShopController extends Controller
             $imgname1 = time() . '.' . $img1->getClientOriginalExtension();
 
             // $img1->move(public_path('workshops'), $imgname1);
-            
-            $path = Storage::disk('r2')->put('workshops/' . $imgname1, file_get_contents($img1));   
+
+            $path = Storage::disk('r2')->put('workshops/' . $imgname1, file_get_contents($img1));
 
             $company_img = 'workshops/' . $imgname1;
             $user->update(['image' => $company_img]);
@@ -81,18 +82,19 @@ class WorkShopController extends Controller
         }
 
         $wsData = [
-            "workshop_name" => $request->workshop_name,
-            "workshop_logo" => $company_img,
-            "owner"         => $request->owner,
-            "user_id"       => $user->id,
-            "address"       => $user->location,
-            "branch"        => $user->city,
-            "latitude"      => $user->lat,
-            "longitude"     => $user->lng,
-            "tax_number"    => $request->tax_number,
-            "legal_number"  => $request->legal_number,
-            "employee"      => $request->employee,
-            'max'           => 5,
+            "workshop_name"   => $request->workshop_name,
+            "workshop_logo"   => $company_img,
+            "owner"           => $request->owner,
+            "whatsapp_number" => $request->whatsapp_number,
+            "user_id"         => $user->id,
+            "address"         => $user->location,
+            "branch"          => $user->city,
+            "latitude"        => $user->lat,
+            "longitude"       => $user->lng,
+            "tax_number"      => $request->tax_number,
+            "legal_number"    => $request->legal_number,
+            "employee"        => $request->employee,
+            'max'             => 5,
         ];
 
         $workshop_provider = WorkshopProvider::create($wsData);
@@ -104,10 +106,10 @@ class WorkShopController extends Controller
                 if ($index >= $workshop_provider->max) {
                     break;
                 }
-                $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
+                $imgName   = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
                 $imagePath = 'workshops/' . $imgName;
 
-                $path = Storage::disk('r2')->put('workshops/' . $imgName, file_get_contents($uploadedImage));   
+                $path = Storage::disk('r2')->put('workshops/' . $imgName, file_get_contents($uploadedImage));
 
                 $url = env('CLOUDFLARE_R2_URL') . $path;
 
@@ -251,11 +253,11 @@ class WorkShopController extends Controller
     public function update(Request $request)
     {
         try {
-            // ✅ Validate request directly
-            $validatedData = $request->validate([
+            //  Validate request directly
+            $request->validate([
                 'workshop_name' => 'required|string',
+                'whatsapp_number' => 'required|string',
                 'owner'         => 'required|string',
-                'tax_number'    => 'nullable|string',
                 'legal_number'  => 'required|string',
                 'employee'      => 'required|integer',
                 'categories'    => ['required', 'array', 'min:1'],
@@ -269,21 +271,19 @@ class WorkShopController extends Controller
 
             // ✅ Assign validated data
             $workshop->workshop_name = $request['workshop_name'];
+            $workshop->whatsapp_number = $request['whatsapp_number'] ?? $workshop->whatsapp_number;
             $workshop->owner         = $request['owner'] ?? $workshop->owner;
-
-            if($request['tax_number'] != null  || $request['tax_number'] != ''){
-                $workshop->tax_number    =  $request->tax_number;
-            }
+            $workshop->tax_number = $request['tax_number'] ?? '';
 
             $workshop->legal_number = $request['legal_number'] ?? $workshop->legal_number;
             $workshop->employee     = $request['employee'] ?? $workshop->employee;
 
-            // ✅ Handle file upload (if provided)
+            //  Handle file upload (if provided)
             if ($request->hasFile('workshop_logo')) {
                 $img1     = $request->file('workshop_logo');
                 $imgname1 = time() . '.' . $img1->getClientOriginalExtension();
-                
-                $path = Storage::disk('r2')->put('workshops/' . $imgname1, file_get_contents($img1));   
+
+                $path = Storage::disk('r2')->put('workshops/' . $imgname1, file_get_contents($img1));
 
                 $workshop->workshop_logo = 'workshops/' . $imgname1;
             }
@@ -343,27 +343,26 @@ class WorkShopController extends Controller
                 ]);
             } else {
                 foreach ($request->images as $index => $uploadedImage) {
-                    $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
+                    $imgName   = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
                     $imagePath = 'workshops/' . $imgName;
-                    
+
                     $path = Storage::disk('r2')->put(
                         'workshops/' . $imgName,
                         file_get_contents($uploadedImage)
-                    );    
+                    );
                     $url = env('CLOUDFLARE_R2_URL') . $path;
 
-                    if (!$path) {
+                    if (! $path) {
                         return response()->json([
                             'status'  => false,
                             'message' => "Failed to upload image: $imgName",
                         ]);
                     }
-                
-                
+
                     $data->images()->create([
                         'image' => $imagePath,
                     ]);
-                
+
                     $data->current = $data->current + 1;
                     $data->save();
                 }
@@ -388,7 +387,7 @@ class WorkShopController extends Controller
         try {
             $img = Image::findOrFail($id);
 
-            // Get the path to the image
+                                              // Get the path to the image
             $path = public_path($img->image); // assuming $img->image = 'uploads/cars/image.jpg'
 
             // Delete the file if it exists
