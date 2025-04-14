@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use App\Http\Resources\UserResource;
-
+use Storage;
 class allUsersController extends Controller
 {
     public function register(Request $request)

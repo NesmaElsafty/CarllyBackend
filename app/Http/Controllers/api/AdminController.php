@@ -1,181 +1,175 @@
 <?php
-
 namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
+use App\Http\Resources\UserCarResource;
 use App\Models\admin\adminAuthModel;
-use App\Models\carListingModel;
-use App\Models\SparePart;
-use App\Models\CarBrand;
-use App\Models\BrandModel;
-use App\Models\ModelYear;
 use App\Models\allUsersModel;
-use App\Models\SparepartCategory;
+use App\Models\BrandModel;
+use App\Models\CarBrand;
+use App\Models\carListingModel;
+use App\Models\ModelYear;
 use App\Models\Setting;
-use Carbon\Carbon;
+use App\Models\SparePart;
+use App\Models\SparepartCategory;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use App\Models\SubCatModel;
-use Exception;
 
 class AdminController extends Controller
 {
-   
 
     public function test(Request $request)
     {
         if (isset($_FILES['csv']) && $_FILES['csv']['error'] === UPLOAD_ERR_OK) {
 
             $csvFile = $_FILES['csv']['tmp_name'];
-            $data = array_map('str_getcsv', file($csvFile));
+            $data    = array_map('str_getcsv', file($csvFile));
             foreach ($data as $key => $row) {
                 $model = BrandModel::where(["name" => $row[1]])->first();
                 ModelYear::create([
                     "model_id" => $model->id,
-                    "name" => $row[2]
+                    "name"     => $row[2],
                 ]);
                 if (isset($row[3])) {
                     ModelYear::create([
                         "model_id" => $model->id,
-                        "name" => $row[3]
+                        "name"     => $row[3],
                     ]);
                 }
                 if (isset($row[4])) {
                     ModelYear::create([
                         "model_id" => $model->id,
-                        "name" => $row[4]
+                        "name"     => $row[4],
                     ]);
                 }
             }
         }
         return [
-            'status' => true,
+            'status'  => true,
             'message' => 'Success',
-            'data' => null,
+            'data'    => null,
         ];
     }
-    
-     public function registerAdmin(Request $request)
+
+    public function registerAdmin(Request $request)
     {
         try {
             $request->validate([
-                'email' => 'required|email|unique:admin_settings,email',
-                'name' => ['required', Rule::unique('admin_settings')->where('name', $request->name)],
-                'password' => 'required|min:6'
+                'email'    => 'required|email|unique:admin_settings,email',
+                'name'     => ['required', Rule::unique('admin_settings')->where('name', $request->name)],
+                'password' => 'required|min:6',
             ]);
-    
+
             try {
-                $admin = new AdminAuthModel();
-                $admin->name = $request->name;
-                $admin->email = $request->email;
-                $admin->api_token ='';
-                $admin->pass = Hash::make($request->password);
+                $admin            = new AdminAuthModel();
+                $admin->name      = $request->name;
+                $admin->email     = $request->email;
+                $admin->api_token = '';
+                $admin->pass      = Hash::make($request->password);
                 $admin->save();
-    
+
                 return response()->json([
-                    'status' => true,
+                    'status'  => true,
                     'message' => 'Admin registered successfully.',
-                    'data' => $admin,
+                    'data'    => $admin,
                 ], 201);
-    
+
             } catch (ValidationException $e) {
                 // Validation failed
                 return response()->json([
-                    'status' => false,
+                    'status'  => false,
                     'message' => 'Sorry try different username or email',
-                    'errors' => $e->errors(),
-                    'data' => null,
+                    'errors'  => $e->errors(),
+                    'data'    => null,
                 ], 422);
             } catch (\Exception $e) {
                 // General exception
                 return response()->json([
-                    'status' => false,
+                    'status'  => false,
                     'message' => 'An error occurred during registration.',
-                    'error' => $e->getMessage(),
-                    'data' => null,
+                    'error'   => $e->getMessage(),
+                    'data'    => null,
                 ], 500);
             }
         } catch (ValidationException $e) {
             return response()->json([
-                'status' => false,
+                'status'  => false,
                 'message' => 'Sorry try different username or email',
-                'errors' => $e->errors(),
-                'data' => null,
+                'errors'  => $e->errors(),
+                'data'    => null,
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
+                'status'  => false,
                 'message' => 'An error occurred during registration.',
-                'error' => $e->getMessage(),
-                'data' => null,
+                'error'   => $e->getMessage(),
+                'data'    => null,
             ], 500);
         }
-    }    
-    public function getAllAdmins(){
+    }
+    public function getAllAdmins()
+    {
         $allAdmins = AdminAuthModel::orderBy('id', 'desc')->get();
-            if($allAdmins->count() > 0){
-                return response()->json([
-                    "status" => true,
-                    "data" => $allAdmins,
-                ], 200);
-            }else{
-                return response()->json([
-                    "status" => false,
-                    "Message" => "Users Records is Empty",
-                ], 404);
-            }
-       }
-    public function delAdmin(Request $request){
-        $id = $request->id;
+        if ($allAdmins->count() > 0) {
+            return response()->json([
+                "status" => true,
+                "data"   => $allAdmins,
+            ], 200);
+        } else {
+            return response()->json([
+                "status"  => false,
+                "Message" => "Users Records is Empty",
+            ], 404);
+        }
+    }
+    public function delAdmin(Request $request)
+    {
+        $id    = $request->id;
         $admin = AdminAuthModel::find($id);
         if ($admin) {
             $admin->delete();
             return response()->json([
-                'status'  => true ,
-                'message' => 'Admin deleted successfully'
+                'status'  => true,
+                'message' => 'Admin deleted successfully',
             ], 200);
         } else {
             return response()->json([
-                'status'  => false ,
-                'message' => 'Admin not found'
+                'status'  => false,
+                'message' => 'Admin not found',
             ], 404);
-        }      
+        }
     }
-    
-    
-    
+
     public function login(Request $request)
     {
         try {
             // Validate the request
             $request->validate([
-                'email' => 'required|email',
-                'password' => 'required'
+                'email'    => 'required|email',
+                'password' => 'required',
             ]);
 
             // Find the user by email
             $user = AdminAuthModel::where('email', $request->email)->first();
 
-            if (!$user) {
+            if (! $user) {
                 // User not found
                 return response()->json([
-                    'status' => false,
+                    'status'  => false,
                     'message' => 'Email is incorrect or not registered!',
-                    'data' => null,
+                    'data'    => null,
                 ], 404);
             }
 
             // Check the password
-            if (!Hash::check($request->password, $user->pass)) {
+            if (! Hash::check($request->password, $user->pass)) {
                 // Invalid password
                 return response()->json([
-                    'status' => false,
+                    'status'  => false,
                     'message' => 'Password is incorrect!',
-                    'data' => null,
+                    'data'    => null,
                 ], 401);
             }
 
@@ -187,28 +181,28 @@ class AdminController extends Controller
 
             // Successful login
             return response()->json([
-                'status' => true,
+                'status'  => true,
                 'message' => 'Login successful!',
-                'data' => [
+                'data'    => [
                     'auth_token' => $token,
-                    'user' => $user
+                    'user'       => $user,
                 ],
             ], 200);
         } catch (ValidationException $e) {
             // Validation failed
             return response()->json([
-                'status' => false,
+                'status'  => false,
                 'message' => 'Validation error',
-                'errors' => $e->errors(),
-                'data' => null,
+                'errors'  => $e->errors(),
+                'data'    => null,
             ], 422);
         } catch (\Exception $e) {
             // General exception
             return response()->json([
-                'status' => false,
+                'status'  => false,
                 'message' => 'An error occurred during login.',
-                'error' => $e->getMessage(),
-                'data' => null,
+                'error'   => $e->getMessage(),
+                'data'    => null,
             ], 500);
         }
     }
@@ -218,9 +212,9 @@ class AdminController extends Controller
         auth()->user()->tokens()->delete();
 
         return [
-            "status" => true,
+            "status"  => true,
             'message' => 'You Logout successfully',
-            "data" => []
+            "data"    => [],
         ];
     }
 
@@ -229,13 +223,13 @@ class AdminController extends Controller
         // dd(auth()->user());
 
         allUsersModel::findOrFail($request->user_id)->update([
-            "acc_status" => $request->acc_status
+            "acc_status" => $request->acc_status,
         ]);
 
         return [
-            "status" => true,
+            "status"  => true,
             'message' => 'Account Status updated successfully',
-            "data" => []
+            "data"    => [],
         ];
     }
 
@@ -243,27 +237,28 @@ class AdminController extends Controller
     {
         $data = [];
 
-        $data['new_cars'] = carListingModel::where('car_type', 'New')->count();
-        $data['used_cars'] = carListingModel::where('car_type', 'Used')->count();
+        $data['new_cars']     = carListingModel::where('car_type', 'New')->count();
+        $data['used_cars']    = carListingModel::where('car_type', 'Used')->count();
         $data['auction_cars'] = carListingModel::where('car_type', 'Auction')->count();
-        $data['total_cars'] = $data['new_cars'] + $data['used_cars'] + $data['auction_cars'];
+        $data['total_cars']   = $data['new_cars'] + $data['used_cars'] + $data['auction_cars'];
 
-        $data['total_users'] = allUsersModel::where('usertype', 'user')->count();
-        $data['car_dealers'] = allUsersModel::where('usertype', 'dealer')->count();
+        $data['total_users']       = allUsersModel::where('usertype', 'user')->count();
+        $data['car_dealers']       = allUsersModel::where('usertype', 'dealer')->count();
         $data['sparepart_dealers'] = allUsersModel::where('usertype', 'shop_dealer')->count();
-        $data['workshop_dealers'] = allUsersModel::where('usertype', 'workshop')->count();
-
+        $data['workshop_dealers']  = allUsersModel::where('usertype', 'workshop')->count();
 
         return [
-            'status' => true,
+            'status'  => true,
             'message' => "Data get successfully!",
-            'data' => $data,
+            'data'    => $data,
         ];
     }
 
     public function getCarsListing(Request $request)
     {
-        $carListings = carListingModel::with('user');
+        $carListings = carListingModel::query();
+        $carListings->orderBy('id', 'desc');
+
         if (isset($request->search) && $request->search != '') {
             $carListings->where(function ($query) use ($request) {
                 $query->where('listing_title', 'LIKE', '%' . $request->search . '%')
@@ -324,19 +319,18 @@ class AdminController extends Controller
             $carListings->latest('id');
         }
 
-        $carListings =  $carListings->paginate(15);
-
+        $carListings = $carListings->paginate(15);
         return [
-            'status' => true,
+            'status'  => true,
             'message' => "Data get successfully!",
-            'data' => [
-                "cars" => $carListings->items(),
+            'data'    => [
+                "cars"       => UserCarResource::collection($carListings),
                 "pagination" => [
                     'current_page' => $carListings->currentPage(),
-                    'per_page' => $carListings->perPage(),
-                    'total' => $carListings->total(),
-                    'last_page' => $carListings->lastPage(),
-                ]
+                    'per_page'     => $carListings->perPage(),
+                    'total'        => $carListings->total(),
+                    'last_page'    => $carListings->lastPage(),
+                ],
             ],
         ];
     }
@@ -355,19 +349,19 @@ class AdminController extends Controller
         if (isset($request->priceTo) && $request->priceTo != 0) {
             $carListings->where('price', '<=', $request->priceTo);
         }
-        $carListings =  $carListings->paginate(15);
+        $carListings = $carListings->paginate(15);
 
         return [
-            'status' => true,
+            'status'  => true,
             'message' => "Data get successfully!",
-            'data' => [
-                "cars" => $carListings->items(),
+            'data'    => [
+                "cars"       => $carListings->items(),
                 "pagination" => [
                     'current_page' => $carListings->currentPage(),
-                    'per_page' => $carListings->perPage(),
-                    'total' => $carListings->total(),
-                    'last_page' => $carListings->lastPage(),
-                ]
+                    'per_page'     => $carListings->perPage(),
+                    'total'        => $carListings->total(),
+                    'last_page'    => $carListings->lastPage(),
+                ],
             ],
         ];
     }
@@ -382,17 +376,17 @@ class AdminController extends Controller
         $data = $data->paginate(15);
 
         return [
-            'status' => true,
+            'status'  => true,
             'message' => "Data get successfully!",
-            'data' => [
-                "items" => $data->items(),
+            'data'    => [
+                "items"      => $data->items(),
                 "pagination" => [
                     'current_page' => $data->currentPage(),
-                    'per_page' => $data->perPage(),
-                    'total' => $data->total(),
-                    'last_page' => $data->lastPage(),
-                ]
-            ]
+                    'per_page'     => $data->perPage(),
+                    'total'        => $data->total(),
+                    'last_page'    => $data->lastPage(),
+                ],
+            ],
         ];
     }
 
@@ -407,17 +401,17 @@ class AdminController extends Controller
         }
         $data = $data->paginate(15);
         return [
-            'status' => true,
+            'status'  => true,
             'message' => "Data get successfully!",
-            'data' => [
-                "items" => $data->items(),
+            'data'    => [
+                "items"      => $data->items(),
                 "pagination" => [
                     'current_page' => $data->currentPage(),
-                    'per_page' => $data->perPage(),
-                    'total' => $data->total(),
-                    'last_page' => $data->lastPage(),
-                ]
-            ]
+                    'per_page'     => $data->perPage(),
+                    'total'        => $data->total(),
+                    'last_page'    => $data->lastPage(),
+                ],
+            ],
         ];
     }
 
@@ -427,23 +421,23 @@ class AdminController extends Controller
         $data = ModelYear::with('model.brand')->has('model')->latest('id')->paginate(15);
 
         return [
-            'status' => true,
+            'status'  => true,
             'message' => "Data get successfully!",
-            'data' => [
-                "items" => $data->items(),
+            'data'    => [
+                "items"      => $data->items(),
                 "pagination" => [
                     'current_page' => $data->currentPage(),
-                    'per_page' => $data->perPage(),
-                    'total' => $data->total(),
-                    'last_page' => $data->lastPage(),
-                ]
-            ]
+                    'per_page'     => $data->perPage(),
+                    'total'        => $data->total(),
+                    'last_page'    => $data->lastPage(),
+                ],
+            ],
         ];
     }
 
     public function addCategory(Request $request)
     {
-        if (isset($request->category_id) &&  $request->category_id != '') {
+        if (isset($request->category_id) && $request->category_id != '') {
             $validatedData = $request->validate([
                 'name' => [
                     'required',
@@ -451,35 +445,35 @@ class AdminController extends Controller
                 ],
             ]);
             if ($request->hasFile('image')) {
-                $img5 = $request->file('image');
+                $img5     = $request->file('image');
                 $imgname5 = time() . '.' . $img5->getClientOriginalExtension();
                 $img5->move(public_path('spareparts'), $imgname5);
-                $listing_img5 = 'spareparts/' . $imgname5;
+                $listing_img5           = 'spareparts/' . $imgname5;
                 $validatedData['image'] = $listing_img5;
             }
 
             $brand = SparepartCategory::find($request->category_id)->update($validatedData);
             return [
-                'status' => true,
+                'status'  => true,
                 'message' => "SparepartCategory updated successfully!",
-                'data' => $brand
+                'data'    => $brand,
             ];
         } else {
             $validatedData = $request->validate([
-                "name" => "required|unique:sparepart_categories"
+                "name" => "required|unique:sparepart_categories",
             ]);
             if ($request->hasFile('image')) {
-                $img5 = $request->file('image');
+                $img5     = $request->file('image');
                 $imgname5 = time() . '.' . $img5->getClientOriginalExtension();
                 $img5->move(public_path('spareparts'), $imgname5);
-                $listing_img5 = 'spareparts/' . $imgname5;
+                $listing_img5           = 'spareparts/' . $imgname5;
                 $validatedData['image'] = $listing_img5;
             }
             $brand = SparepartCategory::create($validatedData);
             return [
-                'status' => true,
+                'status'  => true,
                 'message' => "SparepartCategory created successfully!",
-                'data' => $brand
+                'data'    => $brand,
             ];
         }
     }
@@ -490,32 +484,32 @@ class AdminController extends Controller
         ]);
         $brand = SparepartCategory::findOrFail($request->category_id)->delete();
         return [
-            'status' => true,
+            'status'  => true,
             'message' => "SparepartCategory deleted successfully!",
-            'data' => $brand
+            'data'    => $brand,
         ];
     }
 
     public function getSparepartCategories(Request $request)
     {
         $data = SparepartCategory::whereNull('parent_id')->latest('id');
-        if($request->search){
-            $data = $data->where('name','LIKE','%'.$request->search.'%');
+        if ($request->search) {
+            $data = $data->where('name', 'LIKE', '%' . $request->search . '%');
         }
         $data = $data->paginate(15);
 
         return [
-            'status' => true,
+            'status'  => true,
             'message' => "Data get successfully!",
-            'data' => [
-                "items" => $data->items(),
+            'data'    => [
+                "items"      => $data->items(),
                 "pagination" => [
                     'current_page' => $data->currentPage(),
-                    'per_page' => $data->perPage(),
-                    'total' => $data->total(),
-                    'last_page' => $data->lastPage(),
-                ]
-            ]
+                    'per_page'     => $data->perPage(),
+                    'total'        => $data->total(),
+                    'last_page'    => $data->lastPage(),
+                ],
+            ],
         ];
     }
 
@@ -525,17 +519,17 @@ class AdminController extends Controller
         $data = BrandModel::with('brand')->whereHas('brand')->latest('id')->paginate(15);
 
         return [
-            'status' => true,
+            'status'  => true,
             'message' => "Data get successfully!",
-            'data' => [
-                "items" => $data->items(),
+            'data'    => [
+                "items"      => $data->items(),
                 "pagination" => [
                     'current_page' => $data->currentPage(),
-                    'per_page' => $data->perPage(),
-                    'total' => $data->total(),
-                    'last_page' => $data->lastPage(),
-                ]
-            ]
+                    'per_page'     => $data->perPage(),
+                    'total'        => $data->total(),
+                    'last_page'    => $data->lastPage(),
+                ],
+            ],
         ];
     }
 
@@ -545,16 +539,15 @@ class AdminController extends Controller
         $data = ModelYear::with('model.brand')->whereHas('model')->latest('id')->get();
 
         return [
-            'status' => true,
+            'status'  => true,
             'message' => "Data get successfully!",
-            'data' => $data
+            'data'    => $data,
         ];
     }
 
-
     public function addBrand(Request $request)
     {
-        if (isset($request->id) &&  $request->id != '') {
+        if (isset($request->id) && $request->id != '') {
             $validatedData = $request->validate([
                 'name' => [
                     'required',
@@ -565,19 +558,19 @@ class AdminController extends Controller
                 "name" => $request->name,
             ]);
             return [
-                'status' => true,
+                'status'  => true,
                 'message' => "Brand updated successfully!",
-                'data' => $brand
+                'data'    => $brand,
             ];
         } else {
             $validatedData = $request->validate([
-                "name" => "required|unique:car_brands"
+                "name" => "required|unique:car_brands",
             ]);
             $brand = CarBrand::create($validatedData);
             return [
-                'status' => true,
+                'status'  => true,
                 'message' => "Brand created successfully!",
-                'data' => $brand
+                'data'    => $brand,
             ];
         }
     }
@@ -588,9 +581,9 @@ class AdminController extends Controller
         ]);
         $brand = CarBrand::findOrFail($request->brand_id)->delete();
         return [
-            'status' => true,
+            'status'  => true,
             'message' => "Car Brand deleted successfully!",
-            'data' => $brand
+            'data'    => $brand,
         ];
     }
     public function delModel(Request $request)
@@ -600,9 +593,9 @@ class AdminController extends Controller
         ]);
         $model = BrandModel::findOrFail($request->model_id)->delete();
         return [
-            'status' => true,
+            'status'  => true,
             'message' => "Brand Model deleted successfully!",
-            'data' => $model
+            'data'    => $model,
         ];
     }
     public function delYear(Request $request)
@@ -612,17 +605,17 @@ class AdminController extends Controller
         ]);
         $model = ModelYear::findOrFail($request->year_id)->delete();
         return [
-            'status' => true,
+            'status'  => true,
             'message' => " Model year is deleted successfully!",
-            'data' => $model
+            'data'    => $model,
         ];
     }
 
     public function addBrandModel(Request $request)
     {
-        if (isset($request->model_id) &&  $request->model_id != '') {
+        if (isset($request->model_id) && $request->model_id != '') {
             $validatedData = $request->validate([
-                'name' => [
+                'name'     => [
                     'required',
                     Rule::unique('brand_models')->ignore($request->model_id),
                 ],
@@ -630,56 +623,56 @@ class AdminController extends Controller
 
             ]);
             $brand = BrandModel::find($request->model_id)->update([
-                "name" => $request->name,
+                "name"     => $request->name,
                 "brand_id" => $request->brand_id,
             ]);
             return [
-                'status' => true,
+                'status'  => true,
                 'message' => "Brand Model updated successfully!",
-                'data' => $brand
+                'data'    => $brand,
             ];
         } else {
             $validatedData = $request->validate([
-                "name" => "required|unique:brand_models",
+                "name"     => "required|unique:brand_models",
                 "brand_id" => "required",
             ]);
             $brand = BrandModel::create($validatedData);
             return [
-                'status' => true,
+                'status'  => true,
                 'message' => "BrandModel created successfully!",
-                'data' => $brand
+                'data'    => $brand,
             ];
         }
     }
 
     public function addModelYear(Request $request)
     {
-        if (isset($request->year_id) &&  $request->year_id != '') {
+        if (isset($request->year_id) && $request->year_id != '') {
             $validatedData = $request->validate([
-                'name' => [
+                'name'     => [
                     'required',
                 ],
                 "model_id" => "required",
             ]);
             $brand = ModelYear::find($request->year_id)->update([
-                "name" => $request->name,
+                "name"     => $request->name,
                 "model_id" => $request->model_id,
             ]);
             return [
-                'status' => true,
+                'status'  => true,
                 'message' => " Model Year updated successfully!",
-                'data' => $brand
+                'data'    => $brand,
             ];
         } else {
             $validatedData = $request->validate([
-                "name" => "required",
+                "name"     => "required",
                 "model_id" => "required",
             ]);
             $brand = ModelYear::create($validatedData);
             return [
-                'status' => true,
+                'status'  => true,
                 'message' => "BrandModel Year created successfully!",
-                'data' => $brand
+                'data'    => $brand,
             ];
         }
     }
@@ -687,19 +680,19 @@ class AdminController extends Controller
     public function getUsers(Request $request)
     {
         $users = allUsersModel::with('dealer')->withCount('cars')->where('usertype', $request->user_type)->latest('id');
-        $users =  $users->paginate(15);
+        $users = $users->paginate(15);
 
         return [
-            'status' => true,
+            'status'  => true,
             'message' => "Data get successfully!",
-            'data' => [
-                "users" => $users->items(),
+            'data'    => [
+                "users"      => $users->items(),
                 "pagination" => [
                     'current_page' => $users->currentPage(),
-                    'per_page' => $users->perPage(),
-                    'total' => $users->total(),
-                    'last_page' => $users->lastPage(),
-                ]
+                    'per_page'     => $users->perPage(),
+                    'total'        => $users->total(),
+                    'last_page'    => $users->lastPage(),
+                ],
             ],
         ];
     }
@@ -711,9 +704,9 @@ class AdminController extends Controller
 
         $user->cars = carListingModel::where(["user_id" => $user->id])->get();
         return [
-            'status' => true,
+            'status'  => true,
             'message' => "Data get successfully!",
-            'data' => $user
+            'data'    => $user,
         ];
     }
 
@@ -724,9 +717,9 @@ class AdminController extends Controller
         ]);
         $brand = carListingModel::findOrFail($request->car_id)->delete();
         return [
-            'status' => true,
+            'status'  => true,
             'message' => "Car is deleted successfully!",
-            'data' => $brand
+            'data'    => $brand,
         ];
     }
 
@@ -737,51 +730,50 @@ class AdminController extends Controller
         ]);
         $data = SparePart::findOrFail($request->id)->delete();
         return [
-            'status' => true,
+            'status'  => true,
             'message' => "Spare Part is deleted successfully!",
-            'data' => $data
+            'data'    => $data,
         ];
     }
 
     public function getSettings(Request $request)
     {
-        if($request->search=="support"){
-            $data = Setting::where('name','support_details')->first();
-            $data=json_decode($data->value, true);
-        }elseif($request->search=="pages"){
-            $data = Setting::whereIn('name',['privacy_policy','terms_conditions'])->get()->pluck('value', 'name')->toArray();
+        if ($request->search == "support") {
+            $data = Setting::where('name', 'support_details')->first();
+            $data = json_decode($data->value, true);
+        } elseif ($request->search == "pages") {
+            $data = Setting::whereIn('name', ['privacy_policy', 'terms_conditions'])->get()->pluck('value', 'name')->toArray();
         }
 
         return [
-            'status' => true,
+            'status'  => true,
             'message' => "settings get successfully!",
-            'data' => $data,
+            'data'    => $data,
         ];
     }
 
     public function updateSettings(Request $request)
     {
-        if($request->search=="support"){
-            $settings=json_encode($request->data);
-            Setting::where('name','support_details')->update([
-                "value"=> $settings
+        if ($request->search == "support") {
+            $settings = json_encode($request->data);
+            Setting::where('name', 'support_details')->update([
+                "value" => $settings,
             ]);
-        }elseif($request->search=="pages"){
-            Setting::where('name','privacy_policy')->update([
-                "value"=> $request->data['privacy_policy']
+        } elseif ($request->search == "pages") {
+            Setting::where('name', 'privacy_policy')->update([
+                "value" => $request->data['privacy_policy'],
             ]);
-            Setting::where('name','terms_conditions')->update([
-                "value"=> $request->data['terms_conditions']
+            Setting::where('name', 'terms_conditions')->update([
+                "value" => $request->data['terms_conditions'],
             ]);
         }
 
         return [
-            'status' => true,
+            'status'  => true,
             'message' => "settings updated successfully!",
-            'data' => [],
+            'data'    => [],
         ];
     }
-
 
     public function getProfile(Request $request)
     {
@@ -790,9 +782,9 @@ class AdminController extends Controller
 
         if ($user) {
             return [
-                'status' => true,
+                'status'  => true,
                 'message' => "Profile get successfully!",
-                'data' => $user,
+                'data'    => $user,
             ];
         }
     }
@@ -827,9 +819,9 @@ class AdminController extends Controller
         $user = adminAuthModel::whereId($request->user()->id)->update($data);
         if ($user) {
             return [
-                'status' => true,
+                'status'  => true,
                 'message' => "Profile updated successfully!",
-                'data' => [],
+                'data'    => [],
             ];
         }
     }
