@@ -17,8 +17,10 @@ class UserResource extends JsonResource
         $appUrl = env('APP_URL');
         $r2 = env('CLOUDFLARE_R2_URL');
 
-        // $image ='/icon/notfound.png';
+        $image ='/icon/notfound.png';
+        if($this->image){
             $image = str_replace($appUrl, $r2, $this->image);
+        }
         
         return [
             'id' => $this->id,

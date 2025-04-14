@@ -223,8 +223,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('getCurrentUser', [allUsersController::class, 'getCurrentUser']);
 
     Route::resource('images', controller: ImageController::class);
+    
     //For User APP
-
     Route::post('addCarListing', [carListingController::class, 'addCarListing']);
     Route::post('editCarListing', [carListingController::class, 'editCarListing']);
     Route::post('myCarsListing', [carListingController::class, 'myCarsListing']);
