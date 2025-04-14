@@ -233,6 +233,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('getRecentChats', [MessageController::class, 'getRecentChats']);
     Route::post('sendMessage', [MessageController::class, 'sendMessage']);
     Route::post('uploadImgs', [carListingController::class, 'uploadImgs']);
+    Route::delete('delImg/{id}', [carListingController::class, 'delImg']);
 
     Route::post('deleteUser', [allUsersController::class, 'deleteUser']);
 });

@@ -2,15 +2,21 @@
 namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\UserCarResource;
+use App\Http\Resources\UserResource;
+use App\Http\Resources\ImageResource;
 use App\Models\allUsersModel;
+use App\Models\Image;
 use App\Models\carListingModel;
-use Illuminate\Http\Request;
 use Exception;
+use Illuminate\Http\Request;
+use Storage;
+
 class carListingController extends Controller
 {
     public function getCarListing()
     {
-        
+
         $data = carListingModel::orderBy('id', 'desc')->get();
         if ($data->count() > 0) {
             return response()->json([
@@ -28,49 +34,18 @@ class carListingController extends Controller
     ///////// add car listing
     public function addCarListing(Request $request)
     {
-    // dd('adhkjsdkh');
         $validatedData = $request->validate([
-            "listing_title" => "required",
+            // "listing_title" => "required",
             "listing_type"  => "required",
             "listing_model" => "required",
             "listing_year"  => "required",
             "listing_price" => "required|gt:0",
         ]);
-        ////////// handle images start
-        $listingImages = ['listing_img1', 'listing_img2', 'listing_img3', 'listing_img4', 'listing_img5'];
-
-        // Define the base URL to be removed
-        $baseUrl = env('APP_URL');
-
-        foreach ($listingImages as $key => $imgField) {
-            // Check if it's a file or a URL string
-            if ($request->hasFile($imgField)) {
-                // Handle file upload
-                $img     = $request->file($imgField);
-                $imgName = time() . ($key + 1) . '.' . $img->getClientOriginalExtension();
-                $img->move(public_path('listings'), $imgName);
-                $listingImgPath           = 'listings/' . $imgName;
-                $validatedData[$imgField] = $listingImgPath;
-            } elseif ($request->filled($imgField) && filter_var($request->input($imgField), FILTER_VALIDATE_URL)) {
-                // Handle custom direct link (URL)
-                $imgUrl = $request->input($imgField);
-
-                // Remove the base URL from the image link
-                if (strpos($imgUrl, $baseUrl) === 0) {
-                    $imgUrl = str_replace($baseUrl, '', $imgUrl);
-                }
-
-                // Store the remaining part of the URL
-                $validatedData[$imgField] = $imgUrl;
-            } else {
-                                                                            // Leave unchanged or set empty if needed
-                $validatedData[$imgField] = $existingData[$imgField] ?? ''; // Assuming you have previous data stored
-            }
-        }
-
+        $user = auth()->user();
         $validatedData += [
+            'listing_title'         => $request->listing_type . ' ' . $request->listing_model,
             'listing_desc'          => $request->listing_desc,
-            'user_id'               => auth()->user()->id,
+            'user_id'               => $user->id,
             'features_gear'         => $request->features_gear,
             'features_speed'        => $request->features_speed,
             'features_seats'        => $request->features_seats,
@@ -81,15 +56,16 @@ class carListingController extends Controller
             'features_bluetooth'    => $request->features_bluetooth,
             'features_others'       => $request->features_others,
             'car_color'             => $request->car_color,
-            'location'              => $request->location,
-            'city'                  => $request->city ?: '',
-            'lat'                   => $request->lat ?: '',
-            'lng'                   => $request->lng ?: '',
+            'location'              => $request->location ?? $user->location,
+            'city'                  => $request->city ?? $user->city,
+            'lat'                   => $request->lat ?? $user->lat,
+            'lng'                   => $request->lng ?? $user->lng,
             'body_type'             => $request->body_type ?: '',
             'regional_specs'        => $request->regional_specs ?: '',
             'contact_number'        => $request->contact_number ?: '',
             'wa_number'             => $request->wa_number ?: '',
             'vin_number'            => $request->vin_number ?: '',
+            'max'                   => 10,
         ];
         if ($request->pickup_date) {
             $validatedData['pickup_date'] = $request->pickup_date;
@@ -97,12 +73,37 @@ class carListingController extends Controller
         if ($request->pickup_time) {
             $validatedData['pickup_time'] = $request->pickup_time;
         }
-        // dd($validatedData);
         $data = carListingModel::create($validatedData);
+
+        // upload images
+        if ($request->images) {
+            $uploadedImages = $request->images;
+
+            foreach ($uploadedImages as $index => $uploadedImage) {
+                if ($index >= $data->max) {
+                    break;
+                }
+
+                $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
+
+                $path = Storage::disk('r2')->put('listings/' . $imgName, file_get_contents($uploadedImage));
+
+                // $uploadedImage->move(public_path('listings'), $imgName);
+                $imagePath = 'listings/' . $imgName;
+
+                $data->images()->create([
+                    'image' => $imagePath,
+                ]);
+            }
+            $data->current = count($data->images);
+            $data->save();
+        }
+
         if ($data) {
             return response()->json([
                 "status"  => true,
                 "message" => 'Listing Successfully',
+                "data"    => new UserCarResource($data),
             ], 200);
         } else {
             return response()->json([
@@ -115,6 +116,7 @@ class carListingController extends Controller
 
     public function editCarListing(Request $request)
     {
+        $data = carListingModel::findOrFail($request->carId);
 
         $validatedData = $request->validate([
             "listing_title" => "required",
@@ -123,40 +125,10 @@ class carListingController extends Controller
             "listing_year"  => "required",
             "listing_price" => "required|gt:0",
         ]);
-        $listingImages = ['listing_img1', 'listing_img2', 'listing_img3', 'listing_img4', 'listing_img5'];
-
-        // Define the base URL to be removed
-        $baseUrl = env('APP_URL');
-
-        foreach ($listingImages as $key => $imgField) {
-            // Check if it's a file or a URL string
-            if ($request->hasFile($imgField)) {
-                // Handle file upload
-                $img     = $request->file($imgField);
-                $imgName = time() . ($key + 1) . '.' . $img->getClientOriginalExtension();
-                $img->move(public_path('listings'), $imgName);
-                $listingImgPath           = 'listings/' . $imgName;
-                $validatedData[$imgField] = $listingImgPath;
-            } elseif ($request->filled($imgField) && filter_var($request->input($imgField), FILTER_VALIDATE_URL)) {
-                // Handle custom direct link (URL)
-                $imgUrl = $request->input($imgField);
-
-                // Remove the base URL from the image link
-                if (strpos($imgUrl, $baseUrl) === 0) {
-                    $imgUrl = str_replace($baseUrl, '', $imgUrl);
-                }
-
-                // Store the remaining part of the URL
-                $validatedData[$imgField] = $imgUrl;
-            } else {
-                                                                            // Leave unchanged or set empty if needed
-                $validatedData[$imgField] = $existingData[$imgField] ?? ''; // Assuming you have previous data stored
-            }
-        }
-
+        
         $validatedData += [
-            'listing_desc'          => $request->listing_desc,
             'user_id'               => auth()->user()->id,
+            'listing_desc'          => $request->listing_desc,
             'features_gear'         => $request->features_gear,
             'features_speed'        => $request->features_speed,
             'features_seats'        => $request->features_seats,
@@ -167,15 +139,15 @@ class carListingController extends Controller
             'features_bluetooth'    => $request->features_bluetooth,
             'features_others'       => $request->features_others,
             'car_color'             => $request->car_color,
-            'location'              => $request->location,
-            'city'                  => $request->city ?: '',
-            'lat'                   => $request->lat ?: '',
-            'lng'                   => $request->lng ?: '',
-            'body_type'             => $request->body_type ?: '',
-            'regional_specs'        => $request->regional_specs ?: '',
-            'contact_number'        => $request->contact_number ?: '',
-            'wa_number'             => $request->wa_number ?: '',
-            'vin_number'            => $request->vin_number ?: '',
+            'location'              => $request->location ?? $data->location,
+            'city'                  => $request->city ?? $data->city,
+            'lat'                   => $request->lat ?? $data->lat,
+            'lng'                   => $request->lng ?? $data->lng,
+            'body_type'             => $request->body_type,
+            'regional_specs'        => $request->regional_specs,
+            'contact_number'        => $request->contact_number,
+            'wa_number'             => $request->wa_number,
+            'vin_number'            => $request->vin_number,
         ];
         if ($request->pickup_date) {
             $validatedData['pickup_date'] = $request->pickup_date;
@@ -184,7 +156,7 @@ class carListingController extends Controller
             $validatedData['pickup_time'] = $request->pickup_time;
         }
         // dd($validatedData);
-        $data = carListingModel::findOrFail($request->carId)->update($validatedData);
+        $data->update($validatedData);
         if ($data) {
             return response()->json([
                 "status"  => true,
@@ -201,33 +173,47 @@ class carListingController extends Controller
 
     public function uploadImgs(Request $request)
     {
-        try{
-            $listingImages = ['listing_img1', 'listing_img2', 'listing_img3', 'listing_img4', 'listing_img5'];
-            $baseUrl = 'https://livebackend.carllymotors.com';
-            $car = CarListingModel::find($request->car_id);
-    
-            foreach ($request->imgs as $key => $img) {
-                $imgStr = 'listing_img' . ($key + 1); 
-                // Check if it's a file or a URL string
-                    // Handle file upload
-                    $imgName = time() . ($key + 1) . '.' . $img->getClientOriginalExtension();
-                    $img->move(public_path('listings'), $imgName);
-                    $listingImgPath           = 'listings/' . $imgName;
-                    // Assign the file to that property using curly braces
-                    
-                    $car->{$imgStr} = $listingImgPath;
-                    $car->save();
+        try {
+            $request->validate([
+                'car_id'    => 'required',
+                'images.*' => 'image|mimes:jpg,jpeg,png,gif',
+            ]);
+            $data = carListingModel::findOrFail($request->car_id);
+            if ($data->current + count($request->images) > $data->max) {
+
+                return response()->json([
+                    'status'  => false,
+                    'message' => "You can't upload more than " . $data->max . " images!",
+                ]);
+            } else {
+                foreach ($request->images as $index => $uploadedImage) {
+
+                    $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
+                    $path = Storage::disk('r2')->put('listings/' . $imgName, file_get_contents($uploadedImage));   
+
+                    // $uploadedImage->move(public_path('listings'), $imgName);
+                    $imagePath = 'listings/' . $imgName;
+
+                    $data->images()->create([
+                        'image' => $imagePath,
+                    ]);
+
+                    $data->current = $data->current + 1;
+                    $data->save();
+                }
+
+                return response()->json([
+                    'status'  => true,
+                    'message' => "Images uploaded successfully!",
+                    'data'    => ImageResource::collection($data->images),
+                ]);
             }
+
+        } catch (Exception $e) {
             return response()->json([
-                "status"  => true,
-                "message" => 'Images uploaded Successfully',
-            ], 200);
-        }catch(Exception $e){
-            return response()->json([
-                "status"  => false,
-                "message" => "Faild to upload imgs",
-                "error" => $e->getMessage(),
-            ], 500);
+                'status'  => false,
+                'message' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -250,7 +236,7 @@ class carListingController extends Controller
             'status'  => true,
             'message' => "Data get successfully!",
             'data'    => [
-                "cars"       => $carListings->items(),
+                "cars"       => UserCarResource::collection($carListings),
                 "pagination" => [
                     'current_page' => $carListings->currentPage(),
                     'per_page'     => $carListings->perPage(),
@@ -270,6 +256,36 @@ class carListingController extends Controller
             'message' => "Car is removed from list successfully!",
             'data'    => null,
         ];
+    }
+
+    public function delImg($id)
+    {
+        try {
+            $img = Image::findOrFail($id);
+    
+            $path = $img->image; // استخدم المسار النسبي داخل الـ bucket فقط
+    
+            if (Storage::disk('r2')->exists($path)) {
+                Storage::disk('r2')->delete($path);
+            }
+    
+            $data = carListingModel::findOrFail($img->carlisting_id);
+            $data->current = $data->current - 1;
+            $data->save();
+    
+            $img->delete();
+    
+            return [
+                'status'  => true,
+                'message' => "Image is removed from list and filesystem successfully!",
+                'data'    => null,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status'  => false,
+                'message' => $e->getMessage(),
+            ];
+        }
     }
 
     public function getCarListingById($id)
