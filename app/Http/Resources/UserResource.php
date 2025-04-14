@@ -14,7 +14,12 @@ class UserResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $image =  $this->image ?? '/icon/notfound.png';
+        $appUrl = env('APP_URL');
+        $r2 = env('CLOUDFLARE_R2_URL');
+
+        // $image ='/icon/notfound.png';
+            $image = str_replace($appUrl, $r2, $this->image);
+        
         return [
             'id' => $this->id,
             'fname' => $this->fname,

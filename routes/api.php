@@ -240,12 +240,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
 // WorkShop Provider
 Route::get('brands', [CarBrandController::class, 'index']);
 Route::get('categories', [WorkshopCategoryController::class, 'index']);
-Route::get('workshops', [WorkShopController::class, 'index']);
+Route::post('workshops', [WorkShopController::class, 'index']);
 Route::post('packages', [PackageController::class, 'index']);
 
 
 Route::post('login', [allUsersController::class, 'login']);
 Route::post('register', [allUsersController::class, 'register']);
+
 Route::get('getAllCarsListing', [AdminController::class, 'getCarsListing']);
 Route::get('searchSpareParts', [allUsersController::class, 'searchSpareParts']);
 

@@ -41,8 +41,8 @@ class WorkShopController extends Controller
             'owner'           => 'max:245',
             'location'        => 'max:245',
             'city'            => 'max:245',
-            'lat'             => 'max:245',
-            'lng'             => 'max:245',
+            'lat'             => 'required|max:245',
+            'lng'             => 'required|max:245',
             'tax_number'      => 'nullable|max:245',
             'legal_number'    => 'max:245',
             'employee'        => 'max:245',
@@ -241,9 +241,28 @@ class WorkShopController extends Controller
         ];
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $workshops = WorkshopProvider::get();
+        $workshops = WorkshopProvider::query();
+        if($request->city){
+            $workshops->whereHas('user', function ($q) use ($request) {
+                $q->where('city', $request->city);
+            });
+        }
+
+        if($request->category_id){
+            $workshops->whereHas('categories', function ($q) use ($request) {
+                $q->where('workshop_category_provider.workshop_category_id', $request->category_id);
+            });
+        }
+
+        if ($request->brand_id) {
+            $workshops->whereHas('brands', function ($q) use ($request) {
+                $q->where('car_brand_workshop_provider.car_brand_id', $request->brand_id);
+            });
+        }
+
+        $workshops = $workshops->paginate(15);
         return [
             "status" => true,
             "data"   => WorkshopResource::collection($workshops),

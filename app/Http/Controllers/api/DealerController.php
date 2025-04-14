@@ -445,8 +445,6 @@ class DealerController extends Controller
         }
     }
     
-    
-
     public function delCar(Request $request)
     {
         $car = carListingModel::findOrFail($request->list_id);
