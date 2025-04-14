@@ -26,7 +26,6 @@ class UserCarResource extends JsonResource
             "listing_year"          => $this->listing_year,
             "listing_title"         => $this->listing_title,
             "listing_desc"          => $this->listing_desc,
-            "images"                => ImageResource::collection($this->images),
             "listing_price"         => $this->listing_price,
             "features_gear"         => $this->features_gear,
             "features_speed"        => $this->features_speed,
@@ -49,9 +48,10 @@ class UserCarResource extends JsonResource
             "vin_number"            => $this->vin_number,
             'max'                   => $this->max,
             'current'               => $this->current,
-            "user"                  => new UserResource($this->user),
             "updated_at"            => $this->updated_at,
             "created_at"            => $this->created_at,
+            "images"                => ImageResource::collection($this->images),
+            "user"                  => new UserResource($this->user),
         ];
     }
 }
