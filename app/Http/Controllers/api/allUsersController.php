@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use App\Http\Resources\UserResource;
+use App\Http\Resources\UserShopResource;
 use Storage;
 class allUsersController extends Controller
 {
@@ -474,7 +475,7 @@ class allUsersController extends Controller
         return [
             'status'  => true,
             'message' => "Matched data retrieved successfully!",
-            'data'    => $dealers,
+            'data'    => UserShopResource::collection($dealers),
         ];
     }
 
