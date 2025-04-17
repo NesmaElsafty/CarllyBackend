@@ -13,7 +13,8 @@ class UserCarResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-
+        $images = ImageResource::collection($this->images);
+        
         return [
             "id"                    => $this->id,
             "user_id"               => $this->user_id,
