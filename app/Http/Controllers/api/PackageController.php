@@ -26,10 +26,78 @@ class PackageController extends Controller
 
             $packages = $packages->latest()->get();
             return response()->json([
-                'success' => true,
-                'data'    => PackageResource::collection($packages),
+                'status'  => true,
+                'message' => PackageResource::collection($packages),
+            ], 200);   
+           
+        }catch(Exception $e){
+            return response()->json([
+                'status'  => false,
+                'message' => $e->getMessage(),
+            ], 500);   
+        }
+    }
+
+    public function getPackages(Request $request)
+    {
+        $data = Package::latest('id')->paginate(15);
+
+            return [
+                'status' =>true,
+                'message' => "Data get successfully!",
+                'data' => [
+                    "items" => PackageResource::collection($data),
+                    "pagination"=>[
+                        'current_page' => $data->currentPage(),
+                        'per_page' => $data->perPage(),
+                        'total' => $data->total(),
+                        'last_page' => $data->lastPage(),
+                    ]
+                ]
+            ];
+    }
+    public function addPackage(Request $request)
+    {
+        $rules=[
+            'title' => 'required',
+            'provider' => 'required',
+            'period' => 'required|min:1',
+            'period_type' => 'required',
+            'price' => 'required|gt:1',
+            'features' => 'required',
+            'limits' => 'nullable',
+        ];
+        if(isset($request->id) &&  $request->id!=''){
+            $validatedData=$request->validate($rules);
+            $package = Package::findOrFail($request->id);
+            // dd($package);
+            $package->update($validatedData);
+            return [
+                'status' =>true,
+                'message' => "Package updated successfully!",
+                'data' => new  PackageResource($package),
+            ];
+        }else{
+            $validatedData=$request->validate($rules);
+           
+            $package = Package::create($validatedData);
+            return [
+                'status' =>true,
+                'message' => "Package created successfully!",
+                'data' => new  PackageResource($package),
+            ];
+        }
+       
+
+        
+    }
+
+    public function delPackage(Request $request)
+    {
+            $validatedData=$request->validate([
+                "id" => "required",
             ]);
-        } catch (Exception $e) {
+        }catch(Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }

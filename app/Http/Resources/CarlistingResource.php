@@ -8,8 +8,10 @@ class CarListingResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-       
+        $company_name = "";
+        if($this->user->usertype != 'user'){
             $company_name = $this->user->dealer->company_name;
+        }
         return [
             "id"                    => $this->id,
             "car_type"              => $this->car_type,

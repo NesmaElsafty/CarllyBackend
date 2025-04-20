@@ -130,6 +130,7 @@ Route::get('getWebPages', [DataManageController::class, 'getWebPages']);
 Route::get('getPages', [DealerController::class, 'getPages']);
 
 Route::get('getWorkshopCategories', [WorkShopController::class, 'getWorkshopCategories']);
+Route::get('workshop/{workshop_id}', [WorkShopController::class, 'show']);
 
 ///// Car Dealer APIs //////////////
 Route::group(['prefix' => 'dealer', 'middleware' => 'guest'], function () {
