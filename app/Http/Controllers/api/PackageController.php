@@ -37,7 +37,6 @@ class PackageController extends Controller
     public function getPackages(Request $request)
     {
         $data = Package::latest('id')->paginate(15);
-        // dd($data);
 
             return [
                 'status' =>true,

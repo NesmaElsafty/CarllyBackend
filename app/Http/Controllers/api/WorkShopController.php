@@ -460,6 +460,18 @@ class WorkShopController extends Controller
             'workshop_data' => new WorkshopResource($workshop),
         ];
     }
+
+    public function show($workshop_id)
+    {
+        $workshop = WorkshopProvider::find($workshop_id);
+        // dd($workshop->user);
+        return [
+            'status'        => true,
+            'message'       => "Data get successfully!",
+            'user'          => new UserResource($workshop->user),
+            'workshop_data' => new WorkshopResource($workshop),
+        ];
+    }
 // ====================================================================================================
     public function myCustomers(Request $request)
     {
