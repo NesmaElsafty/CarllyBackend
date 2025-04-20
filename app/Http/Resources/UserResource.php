@@ -34,7 +34,7 @@ class UserResource extends JsonResource
             'lat' => $this->lat,
             'lng' => $this->lng,
             'usertype' => $this->usertype,
-            // 'package' => new PackageResource($this->package),
+            'package' => new UserPackageSubscriptionResource($this->currentSubscription),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

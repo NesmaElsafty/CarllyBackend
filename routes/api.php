@@ -13,6 +13,8 @@ use App\Http\Controllers\api\PackageController;
 use App\Http\Controllers\api\ShopController;
 use App\Http\Controllers\api\WorkShopCategoryController;
 use App\Http\Controllers\api\WorkShopController;
+use App\Http\Controllers\api\FeatureController;
+use App\Http\Controllers\api\UserSubscriptionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -34,7 +36,7 @@ Route::group(['prefix' => 'admin', 'middleware' => 'guest'], function () {
     Route::post('login', [AdminController::class, 'login']);
     //Admin Middleware
     Route::middleware(['auth:sanctum'])->group(function () {
-
+        
         // Your routes here
         Route::post('test', [AdminController::class, 'test']);
         Route::post('registerAdmin', [AdminController::class, 'registerAdmin']);
@@ -91,9 +93,9 @@ Route::group(['prefix' => 'admin', 'middleware' => 'guest'], function () {
         Route::post('addRegionalSpecs', [DataManageController::class, 'addRegionalSpecs']);
         Route::post('delRegionalSpecs', [DataManageController::class, 'delRegionalSpecs']);
         Route::get('getWorkshopCategories', [WorkShopCategoryController::class, 'getWorkshopCategories']);
-        Route::get('getPackages', [PackageController::class, 'getPackages']);
-        Route::post('addPackage', [PackageController::class, 'addPackage']);
-        Route::post('delPackage', [PackageController::class, 'delPackage']);
+        // Route::get('getPackages', [PackageController::class, 'getPackages']);
+        // Route::post('addPackage', [PackageController::class, 'addPackage']);
+        // Route::post('delPackage', [PackageController::class, 'delPackage']);
         Route::post('create/WorkshopCat', [WorkShopCategoryController::class, 'addWorkshopCat']);
 
         // -----------Service Categories---------------
@@ -106,6 +108,9 @@ Route::group(['prefix' => 'admin', 'middleware' => 'guest'], function () {
 
         Route::resource('banners', BannerController::class);
         Route::post('/banners/{banner}', [BannerController::class, 'update']);
+
+        Route::resource('features', FeatureController::class);
+
 
     });
 });
@@ -236,13 +241,20 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('delImg/{id}', [carListingController::class, 'delImg']);
 
     Route::post('deleteUser', [allUsersController::class, 'deleteUser']);
+
+    // Subscription
+        Route::post('/subscribe', [UserSubscriptionController::class, 'subscribe']);
+        Route::post('/renew', [UserSubscriptionController::class, 'renew']);
+        Route::post('/upgrade', [UserSubscriptionController::class, 'upgrade']);
+        Route::post('/cancel', [UserSubscriptionController::class, 'cancel']);
+        Route::get('/history', [UserSubscriptionController::class, 'history']);
 });
 
 // WorkShop Provider
 Route::get('brands', [CarBrandController::class, 'index']);
 Route::get('categories', [WorkshopCategoryController::class, 'index']);
 Route::post('workshops', [WorkShopController::class, 'index']);
-Route::post('packages', [PackageController::class, 'index']);
+Route::Resource('packages', PackageController::class);
 
 
 Route::post('login', [allUsersController::class, 'login']);

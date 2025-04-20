@@ -4,7 +4,6 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-
 class PackageResource extends JsonResource
 {
     /**
@@ -21,9 +20,11 @@ class PackageResource extends JsonResource
             'period_type' => $this->period_type,
             'provider' => $this->provider,
             'price'=> $this->price,
-            'features'=> $this->features,
+            'features'=> FeatureResource::collection(($this->features)),
             'limits'=> $this->limits,
             'created_at' => $this->created_at,
         ];
     }
+    public static $wrap = null;
+
 }

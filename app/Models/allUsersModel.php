@@ -49,4 +49,16 @@ class allUsersModel extends Authenticatable
     public function package(){
         return $this->belongsTo(Package::class,'package_id');
     }
+
+    public function subscriptions()
+{
+    return $this->hasMany(\App\Models\UserPackageSubscription::class, 'user_id');
+}
+
+public function currentSubscription()
+{
+    return $this->hasOne(UserPackageSubscription::class, 'user_id')
+        ->where('status', 'active')
+        ->latestOfMany('starts_at');
+}
 }

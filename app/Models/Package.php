@@ -22,7 +22,13 @@ class Package extends Model
     }
 
     public function users(){
-        return $this->hasMany(allUsersModel::class);
+        return $this->hasMany(allUsersModel::class, 'user_id');
     }
+
+    public function features()
+{
+    return $this->belongsToMany(Feature::class);
+}
+
     
 }
