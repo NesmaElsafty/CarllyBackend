@@ -257,69 +257,88 @@ class AdminController extends Controller
     public function getCarsListing(Request $request)
     {
         $carListings = carListingModel::query();
-        $carListings->orderBy('id', 'desc');
 
-        if (isset($request->search) && $request->search != '') {
+        // إضافة الـ JOINs لترتيب حسب أولوية الـ feature
+        $carListings->select('carlisting.*')
+            ->leftJoin('user_package_subscriptions', function ($join) {
+                $join->on('carlisting.user_id', '=', 'user_package_subscriptions.user_id')
+                    ->where('user_package_subscriptions.status', '=', 'active');
+            })
+            ->leftJoin('feature_package', 'user_package_subscriptions.package_id', '=', 'feature_package.package_id')
+            ->leftJoin('features', 'feature_package.feature_id', '=', 'features.id')
+            ->orderBy('features.priority', 'desc'); // ترتيب حسب أولوية الـ feature
+
+        // فلترة البحث
+        if (!empty($request->search)) {
             $carListings->where(function ($query) use ($request) {
                 $query->where('listing_title', 'LIKE', '%' . $request->search . '%')
                     ->orWhere('listing_desc', 'LIKE', '%' . $request->search . '%')
                     ->orWhere('listing_type', 'LIKE', '%' . $request->search . '%');
             });
         }
-        if (isset($request->brand) && $request->brand != '') {
+
+        if (!empty($request->brand)) {
             $carListings->where('listing_type', $request->brand);
         }
-        if (isset($request->model) && $request->model != '') {
+        if (!empty($request->model)) {
             $carListings->where('listing_model', $request->model);
         }
-        if (isset($request->year) && $request->year != '') {
+        if (!empty($request->year)) {
             $carListings->where('listing_year', $request->year);
         }
-
-        if (isset($request->car_type) && $request->car_type != 'All') {
+        if (!empty($request->car_type) && $request->car_type != 'All') {
             $carListings->where('car_type', $request->car_type);
         }
-        if (isset($request->body_type) && $request->body_type != '') {
+        if (!empty($request->body_type)) {
             $carListings->where('body_type', $request->body_type);
         }
-        if (isset($request->regional_specs) && $request->regional_specs != '') {
+        if (!empty($request->regional_specs)) {
             $carListings->where('regional_specs', $request->regional_specs);
         }
-        if (isset($request->city) && $request->city != '') {
+        if (!empty($request->city)) {
             $carListings->where('city', $request->city);
         }
-
-        if (isset($request->priceFrom) && $request->priceFrom != 0) {
+        if (!empty($request->priceFrom)) {
             $carListings->where('listing_price', '>=', $request->priceFrom);
         }
-        if (isset($request->priceTo) && $request->priceTo != 0) {
+        if (!empty($request->priceTo)) {
             $carListings->where('listing_price', '<=', $request->priceTo);
         }
-        if (isset($request->speedFrom) && $request->speedFrom != 0) {
+        if (!empty($request->speedFrom)) {
             $carListings->where('features_speed', '>=', $request->speedFrom);
         }
-        if (isset($request->speedTo) && $request->speedTo != 0) {
+        if (!empty($request->speedTo)) {
             $carListings->where('features_speed', '<=', $request->speedTo);
         }
-
-        if (isset($request->dateFrom) && $request->dateFrom != '') {
+        if (!empty($request->dateFrom)) {
             $carListings->whereDate('created_at', '>=', $request->dateFrom);
         }
-        if (isset($request->dateTo) && $request->dateTo != '') {
+        if (!empty($request->dateTo)) {
             $carListings->whereDate('created_at', '<=', $request->dateTo);
         }
+
+        // ترتيب إضافي بناءً على الطلب
         $sort = ($request->sort == "asc") ? "asc" : "desc";
-        if (isset($request->sort_by) && $request->sort_by == 'date') {
-            $carListings->orderBy('created_at', $sort);
-        } elseif (isset($request->sort_by) && $request->sort_by == 'price') {
-            $carListings->orderBy('listing_price', $sort);
-        } elseif (isset($request->sort_by) && $request->sort_by == 'speed') {
-            $carListings->orderBy('features_speed', $sort);
+
+        if (!empty($request->sort_by)) {
+            switch ($request->sort_by) {
+                case 'date':
+                    $carListings->orderBy('carlisting.created_at', $sort);
+                    break;
+                case 'price':
+                    $carListings->orderBy('carlisting.listing_price', $sort);
+                    break;
+                case 'speed':
+                    $carListings->orderBy('carlisting.features_speed', $sort);
+                    break;
+            }
         } else {
-            $carListings->latest('id');
+            $carListings->latest('carlisting.id');
         }
 
+        // جلب البيانات مع الـ pagination
         $carListings = $carListings->paginate(15);
+
         return [
             'status'  => true,
             'message' => "Data get successfully!",

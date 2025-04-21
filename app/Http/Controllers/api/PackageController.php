@@ -86,14 +86,12 @@ class PackageController extends Controller
                 'message' => "Package created successfully!",
                 'data' => new  PackageResource($package),
             ];
-        }
-       
-
-        
+        }  
     }
 
     public function delPackage(Request $request)
     {
+        try{
             $validatedData=$request->validate([
                 "id" => "required",
             ]);

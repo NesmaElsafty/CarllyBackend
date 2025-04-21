@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('featuers', function (Blueprint $table) {
+        Schema::table('carlisting', function (Blueprint $table) {
             //
+            $table->unsignedBigInteger('feature_id')->nullable();
+            $table->foreign('feature_id')->references('id')->on('features')->onDelete('cascade');
+
         });
     }
 
@@ -21,7 +24,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('featuers', function (Blueprint $table) {
+        Schema::table('carlistings', function (Blueprint $table) {
             //
         });
     }

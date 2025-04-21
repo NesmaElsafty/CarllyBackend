@@ -49,6 +49,9 @@ class UserCarResource extends JsonResource
             "vin_number"            => $this->vin_number,
             'max'                   => $this->max,
             'current'               => $this->current,
+            'feature' => optional(
+            $this->user?->currentSubscription?->package?->features?->first()
+            )?->name,
             "updated_at"            => $this->updated_at,
             "created_at"            => $this->created_at,
             "images"                => ImageResource::collection($this->images),

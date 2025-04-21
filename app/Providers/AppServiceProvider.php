@@ -1,11 +1,12 @@
 <?php
 namespace App\Providers;
-use App\Models\carListingModel;
-use App\Models\WorkshopProvider;
-use App\Models\Image;
-use Illuminate\Support\ServiceProvider;
-use DB;
 
+use App\Models\allUsersModel;
+use App\Models\Package;
+use App\Models\UserPackageSubscription;
+use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\DB;
+// use DB;
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -21,22 +22,21 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        
+//1st
         // $cars = DB::table('carlisting')->select('id', 'listing_img1', 'listing_img2', 'listing_img3', 'listing_img4', 'listing_img5')->get();
         // $fields = ['listing_img1', 'listing_img2', 'listing_img3', 'listing_img4', 'listing_img5'];
-        
+
         // foreach ($cars as $car) {
         //     foreach ($fields as $field) {
         //         if (!is_null($car->$field) && trim($car->$field) !== '') {
         //             Image::create([
         //                 'carlisting_id' => $car->id,
         //                 'image' => $car->$field,
-        //             ]);  
-        //         }              
+        //             ]);
+        //         }
         //     }
         // }
 
-        
         // $duplicates = DB::table('images')
         // ->select('carlisting_id', 'image', DB::raw('MIN(id) as keep_id'))
         // ->groupBy('carlisting_id', 'image');
@@ -47,47 +47,53 @@ class AppServiceProvider extends ServiceProvider
         // ->whereNotIn('id', $idsToKeep)
         // ->delete();
 
-
+//2nd
         // $workshop_providers = WorkshopProvider::get();
         // foreach($workshop_providers as $provider){
         //     $provider->current = count($provider->images);
         //     $provider->max = 5;
         //     $provider->save();
         // }
-        
 
-    //     DB::table('spare_parts')
-    // ->select('id', 'car_model')
-    // ->orderBy('id')
-    // ->chunk(1000, function ($spareparts) {
-    //     $insertData = [];
+//3rd
+        $package = Package::first();
 
-    //     foreach ($spareparts as $part) {
-    //         $models = json_decode($part->car_model, true);
+        if ($package) {
+            $dealers = AllUsersModel::whereIn('usertype', ['user', 'dealer'])
+                ->whereHas('cars')
+                ->get();
 
-    //         if (!is_array($models)) {
-    //             $models = json_decode($models, true);
-    //         }
+            $now           = now();
+            $subscriptions = $dealers->map(function ($dealer) use ($package, $now) {
+                return [
+                    'package_id' => $package->id,
+                    'user_id'    => $dealer->id,
+                    'price'      => $package->price,
+                    'starts_at'  => $now,
+                    'ends_at'    => $now->copy()->addMonth($package->period),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            })->toArray();
 
-    //         if (is_array($models)) {
-    //             $modelIds = BrandModel::whereIn('name', $models)->pluck('id')->toArray();
+            UserPackageSubscription::insert($subscriptions);
+        }
 
-    //             foreach ($modelIds as $modelId) {
-    //                 $insertData[] = [
-    //                     'brand_model_id' => $modelId,
-    //                     'spare_part_id' => $part->id,
-    //                 ];
-    //             }
-    //         }
-    //     }
+        $duplicates = DB::table('user_package_subscriptions')
+            ->select('user_id')
+            ->groupBy('user_id')
+            ->havingRaw('COUNT(*) > 1')
+            ->pluck('user_id');
 
-    //     if (!empty($insertData)) {
-    //         foreach (array_chunk($insertData, 1000) as $chunkedInsert) {
-    //             DB::table('brand_model_spare_part')->insert($chunkedInsert);
-    //         }
-    //     }
-    // });
-
-
+        DB::statement("
+            DELETE FROM user_package_subscriptions
+            WHERE id NOT IN (
+                SELECT max_id FROM (
+                    SELECT MAX(id) as max_id
+                    FROM user_package_subscriptions
+                    GROUP BY user_id
+                ) as keep_ids
+            )
+        ");
     }
 }

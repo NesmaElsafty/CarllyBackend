@@ -20,7 +20,7 @@ class PackageRequest extends FormRequest
             'provider' => 'required|in:Car Provider,Spare Part Provider,workshop,Workshop Provider',
             'price' => 'required|integer|min:0',
             'limits' => 'required|integer|min:0',
-            'feature_ids' => 'required|array',
+            'feature_ids' => 'required',
             'feature_ids.*' => 'exists:features,id',
         ];
     }
