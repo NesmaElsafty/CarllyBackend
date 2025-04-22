@@ -8,6 +8,8 @@ use App\Http\Resources\UserResource;
 use App\Models\allUsersModel;
 use App\Models\CarDealer;
 use App\Models\SparePart;
+use App\Models\Package;
+use App\Models\UserPackageSubscription;
 use App\Models\SparepartCategory;
 use App\Models\SparePartImage;
 use Illuminate\Http\Request;
@@ -19,11 +21,11 @@ class ShopController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            "email"        => 'required|email|unique:allusers,email,NULL,id,userType,shop_dealer',
-            'fname'        => 'required',
-            'company_name' => 'required',
-            'password'     => 'required|min:6',
-        ]);
+        "email"        => 'required|email|unique:allusers,email,NULL,id,userType,shop_dealer',
+        'fname'        => 'required',
+        'company_name' => 'required',
+        'password'     => 'required|min:6',
+    ]);
 
         $user = allUsersModel::create([
             'fname'    => $request['fname'],
@@ -57,6 +59,49 @@ class ShopController extends Controller
         $user->update(['image' => $cData['company_img']]);
 
         $user->dealer = CarDealer::create($cData);
+
+        // subscripe to package
+        if ($request->package_id) {
+            $package = Package::findOrFail($request->package_id);
+
+            $start = now();
+            if ($package->period_type == 'Years') {
+                $period = $package->period * 12;
+                $end    = $start->copy()->addMonths($period);
+            } else {
+                $end = $start->copy()->addMonths($package->period);
+            }
+
+            $subscription = UserPackageSubscription::create([
+                'user_id'    => $user->id,
+                'package_id' => $package->id,
+                'price'      => $package->price,
+                'starts_at'  => $start,
+                'ends_at'    => $end,
+                'status'     => 'active',
+                'renewed'    => false,
+            ]);
+        }else{
+            $package = Package::where('title', 'free Spare Part Provider')->first();
+            $start = now();
+            if ($package->period_type == 'Years') {
+                $period = $package->period * 12;
+                $end    = $start->copy()->addMonths($period);
+            } else {
+                $end = $start->copy()->addMonths($package->period);
+            }
+
+            $subscription = UserPackageSubscription::create([
+                'user_id'    => $user->id,
+                'package_id' => $package->id,
+                'price'      => $package->price,
+                'starts_at'  => $start,
+                'ends_at'    => $end,
+                'status'     => 'active',
+                'renewed'    => false,
+            ]);
+        }
+
         if ($user) {
             return [
                 'status'  => true,
@@ -73,9 +118,7 @@ class ShopController extends Controller
                 'data'    => null,
             ];
 
-        }
-
-    }
+        }}
     public function login(Request $request)
     {
         //    dd(bcrypt('123456'));

@@ -12,18 +12,21 @@ use App\Models\BodyType;
 use App\Models\BrandModel;
 use App\Models\CarBrand;
 use App\Models\CarDealer;
-use App\Models\Image;
 use App\Models\carListingModel;
+use App\Models\Image;
 use App\Models\ModelYear;
 use App\Models\RegionalSpec;
 use App\Models\Setting;
+use App\Models\Package;
+use App\Models\UserPackageSubscription;
 use App\Models\WorkshopProvider;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use Exception;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+
 class DealerController extends Controller
 {
     public function register(Request $request)
@@ -61,7 +64,7 @@ class DealerController extends Controller
         if ($request->hasFile('company_img')) {
             $img1     = $request->file('company_img');
             $imgname1 = time() . '.' . $img1->getClientOriginalExtension();
-            $path = Storage::disk('r2')->put('dealers/' . $imgname1, file_get_contents($img1));   
+            $path     = Storage::disk('r2')->put('dealers/' . $imgname1, file_get_contents($img1));
 
             $company_img          = 'dealers/' . $imgname1;
             $cData['company_img'] = $company_img;
@@ -74,6 +77,47 @@ class DealerController extends Controller
 
         $user->dealer = CarDealer::create($cData);
 
+        // subscripe to package
+        if ($request->package_id) {
+            $package = Package::findOrFail($request->package_id);
+
+            $start = now();
+            if ($package->period_type == 'Years') {
+                $period = $package->period * 12;
+                $end    = $start->copy()->addMonths($period);
+            } else {
+                $end = $start->copy()->addMonths($package->period);
+            }
+
+            $subscription = UserPackageSubscription::create([
+                'user_id'    => $user->id,
+                'package_id' => $package->id,
+                'price'      => $package->price,
+                'starts_at'  => $start,
+                'ends_at'    => $end,
+                'status'     => 'active',
+                'renewed'    => false,
+            ]);
+        }else{
+            $package = Package::where('title', 'free Car Provider')->first();
+            $start = now();
+            if ($package->period_type == 'Years') {
+                $period = $package->period * 12;
+                $end    = $start->copy()->addMonths($period);
+            } else {
+                $end = $start->copy()->addMonths($package->period);
+            }
+
+            $subscription = UserPackageSubscription::create([
+                'user_id'    => $user->id,
+                'package_id' => $package->id,
+                'price'      => $package->price,
+                'starts_at'  => $start,
+                'ends_at'    => $end,
+                'status'     => 'active',
+                'renewed'    => false,
+            ]);
+        }
         if ($user) {
             return [
                 'status'  => true,
@@ -222,7 +266,7 @@ class DealerController extends Controller
     public function myCarsListing(Request $request)
     {
         $carListings = carListingModel::with('user')->where('user_id', auth()->user()->id)->latest('id');
-
+        $user        = auth()->user();
         if (isset($request->carType) && $request->carType != 'All') {
             $carListings->where('car_type', $request->carType);
         }
@@ -237,7 +281,7 @@ class DealerController extends Controller
             'status'  => true,
             'message' => "Data get successfully!",
             'data'    => [
-                "user"       => new UserResource(auth()->user()),
+                "user"       => new UserResource($user),
                 "cars"       => CarlistingResource::collection($carListings),
                 "pagination" => [
                     'current_page' => $carListings->currentPage(),
@@ -251,6 +295,48 @@ class DealerController extends Controller
 
     public function addCarListing(Request $request)
     {
+        $user  = auth()->user();
+        $limit = $user->currentSubscription;
+
+        if ($limit != null) {
+            $limit = $user->currentSubscription?->package?->limits;
+            $cars  = count($user->cars);
+            if ($cars >= $limit) {
+                return response()->json([
+                    "status"  => false,
+                    "message" => "You have reached the maximum number of cars allowed in your subscription plan.",
+                ]);
+            }
+        } else {
+            $package = Package::first();
+
+            // إنهاء أي اشتراك حالي
+            UserPackageSubscription::where('user_id', $user->id)
+                ->where('status', 'active')
+                ->update([
+                    'status'  => 'expired',
+                    'ends_at' => now(),
+                ]);
+
+            $start = now();
+            if ($package->period_type == 'Years') {
+                $period = $package->period * 12;
+                $end    = $start->copy()->addMonths($period);
+            } else {
+                $end = $start->copy()->addMonths($package->period);
+            }
+
+            $subscription = UserPackageSubscription::create([
+                'user_id'    => $user->id,
+                'package_id' => $package->id,
+                'price'      => $package->price,
+                'starts_at'  => $start,
+                'ends_at'    => $end,
+                'status'     => 'active',
+                'renewed'    => false,
+            ]);
+        }
+
         $validatedData = $request->validate([
             "car_type"      => "required|in:New,Imported,Auction,Used",
             "listing_type"  => "required",
@@ -299,8 +385,8 @@ class DealerController extends Controller
 
                 $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
 
-                $path = Storage::disk('r2')->put('listings/' . $imgName, file_get_contents($uploadedImage));   
-                
+                $path = Storage::disk('r2')->put('listings/' . $imgName, file_get_contents($uploadedImage));
+
                 // $uploadedImage->move(public_path('listings'), $imgName);
                 $imagePath = 'listings/' . $imgName;
 
@@ -386,7 +472,7 @@ class DealerController extends Controller
                 foreach ($request->images as $index => $uploadedImage) {
 
                     $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
-                    $path = Storage::disk('r2')->put('listings/' . $imgName, file_get_contents($uploadedImage));   
+                    $path    = Storage::disk('r2')->put('listings/' . $imgName, file_get_contents($uploadedImage));
 
                     // $uploadedImage->move(public_path('listings'), $imgName);
                     $imagePath = 'listings/' . $imgName;
@@ -419,19 +505,19 @@ class DealerController extends Controller
     {
         try {
             $img = Image::findOrFail($id);
-    
+
             $path = $img->image; // استخدم المسار النسبي داخل الـ bucket فقط
-    
+
             if (Storage::disk('r2')->exists($path)) {
                 Storage::disk('r2')->delete($path);
             }
-    
-            $data = carListingModel::findOrFail($img->carlisting_id);
+
+            $data          = carListingModel::findOrFail($img->carlisting_id);
             $data->current = $data->current - 1;
             $data->save();
-    
+
             $img->delete();
-    
+
             return [
                 'status'  => true,
                 'message' => "Image is removed from list and filesystem successfully!",
@@ -444,14 +530,14 @@ class DealerController extends Controller
             ];
         }
     }
-    
+
     public function delCar(Request $request)
     {
         $car = carListingModel::findOrFail($request->list_id);
-        
-        foreach($car->images as $img){
+
+        foreach ($car->images as $img) {
             $filePath = public_path($img->image); // assuming $img->image = 'uploads/cars/image.jpg'
-    
+
             // Delete the file if it exists
 
             if (Storage::disk('r2')->exists($filePath)) {

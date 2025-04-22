@@ -137,31 +137,45 @@ class PackageController extends Controller
     {
         try {
             $package = Package::findOrFail($id);
-            $package->update($request->except('feature_ids'));
+            if($package->title == 'free Car Provider' || $package->title == 'free Spare Part Provider' || $package->title == 'free workshop' || $package->title == 'free Workshop Provider'){
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You can not update this package',
+                ]);
+            }else{
+                $package->update($request->except('feature_ids'));
+                // sync features
+                $package->features()->sync($request->feature_ids);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Package updated successfully',
+                    'data'    => new PackageResource($package),
+                ]);
+            }
 
-            // sync features
-            $package->features()->sync($request->feature_ids);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Package updated successfully',
-                'data'    => new PackageResource($package),
-            ]);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(string $id)
     {
         try {
             $package = Package::findOrFail($id);
+            if($package->title == 'free Car Provider' || $package->title == 'free Spare Part Provider' || $package->title == 'free workshop' || $package->title == 'free Workshop Provider')
+            {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You can not delete this package',
+                ]);   
+            }
             $package->delete();
             return response()->json([
                 'success' => true,
                 'message' => 'Package deleted successfully',
             ]);
-        } catch (Exception $e) {
+        }catch(Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }

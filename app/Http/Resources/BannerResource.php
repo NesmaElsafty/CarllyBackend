@@ -14,12 +14,12 @@ class BannerResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $baseUrl = env('APP_URL');
+        $baseUrl = env('CLOUDFLARE_R2_URL');
         
         if($this->image == null){
             $image = $baseUrl.'/icon/notfound.png';
         }else{
-            $image = $baseUrl .'/'. $this->image;
+            $image = $baseUrl . $this->image;
         }
     
         return [

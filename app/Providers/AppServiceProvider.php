@@ -4,8 +4,9 @@ namespace App\Providers;
 use App\Models\allUsersModel;
 use App\Models\Package;
 use App\Models\UserPackageSubscription;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\ServiceProvider;
+
 // use DB;
 class AppServiceProvider extends ServiceProvider
 {
@@ -56,44 +57,56 @@ class AppServiceProvider extends ServiceProvider
         // }
 
 //3rd
-        $package = Package::first();
+        // $package_ws = Package::where('title', 'free Workshop Provider')->first();
+        // $package_cd = Package::where('title', 'free Car Provider')->first();
+        // $package_sp = Package::where('title', 'free Spare Part Provider')->first();
 
-        if ($package) {
-            $dealers = AllUsersModel::whereIn('usertype', ['user', 'dealer'])
-                ->whereHas('cars')
-                ->get();
+        // $allPackages = [
+        //     'dealer'            => $package_cd,
+        //     'user'              => $package_cd,
+        //     'shop_dealer'       => $package_sp,
+        //     'workshop_provider' => $package_ws,
+        // ];
 
-            $now           = now();
-            $subscriptions = $dealers->map(function ($dealer) use ($package, $now) {
-                return [
-                    'package_id' => $package->id,
-                    'user_id'    => $dealer->id,
-                    'price'      => $package->price,
-                    'starts_at'  => $now,
-                    'ends_at'    => $now->copy()->addMonth($package->period),
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
-            })->toArray();
+        // $now = now();
 
-            UserPackageSubscription::insert($subscriptions);
-        }
+        // $dealers = AllUsersModel::whereIn('usertype', array_keys($allPackages))->get();
 
-        $duplicates = DB::table('user_package_subscriptions')
-            ->select('user_id')
-            ->groupBy('user_id')
-            ->havingRaw('COUNT(*) > 1')
-            ->pluck('user_id');
+        // $subscriptions = $dealers->map(function ($dealer) use ($allPackages, $now) {
+        //     $package = $allPackages[$dealer->usertype] ?? null;
 
-        DB::statement("
-            DELETE FROM user_package_subscriptions
-            WHERE id NOT IN (
-                SELECT max_id FROM (
-                    SELECT MAX(id) as max_id
-                    FROM user_package_subscriptions
-                    GROUP BY user_id
-                ) as keep_ids
-            )
-        ");
+        //     if (! $package) {
+        //         return null;
+        //     }
+
+        //     return [
+        //         'package_id' => $package->id,
+        //         'user_id'    => $dealer->id,
+        //         'price'      => $package->price,
+        //         'starts_at'  => $now,
+        //         'ends_at'    => $now->copy()->addMonth($package->period),
+        //         'created_at' => $now,
+        //         'updated_at' => $now,
+        //     ];
+        // })->filter()->values()->toArray();
+
+        // UserPackageSubscription::insert($subscriptions);
+
+        // $duplicates = DB::table('user_package_subscriptions')
+        //     ->select('user_id')
+        //     ->groupBy('user_id')
+        //     ->havingRaw('COUNT(*) > 1')
+        //     ->pluck('user_id');
+
+        // DB::statement("
+        //     DELETE FROM user_package_subscriptions
+        //     WHERE id NOT IN (
+        //         SELECT max_id FROM (
+        //             SELECT MAX(id) as max_id
+        //             FROM user_package_subscriptions
+        //             GROUP BY user_id
+        //         ) as keep_ids
+        //     )
+        // ");
     }
 }

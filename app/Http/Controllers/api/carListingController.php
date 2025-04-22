@@ -11,6 +11,8 @@ use App\Models\carListingModel;
 use Exception;
 use Illuminate\Http\Request;
 use Storage;
+use App\Models\Package;
+use App\Models\UserPackageSubscription;
 
 class carListingController extends Controller
 {
@@ -33,7 +35,50 @@ class carListingController extends Controller
 
     ///////// add car listing
     public function addCarListing(Request $request)
-    {
+    { 
+        $user = auth()->user();
+        $limit = $user->currentSubscription;
+
+        if($limit != null){
+            $limit = $user->currentSubscription?->package?->limits;
+            if($limit != Null){
+                $cars = count($user->cars);
+                if($cars >= $limit){
+                    return response()->json([
+                        "status"  => false,
+                        "message" => "You have reached the maximum number of cars allowed in your subscription plan.",
+                    ]);
+                }
+            }
+        }else{
+            $package = Package::where('provider', 'Car Provider')->first();
+
+        // إنهاء أي اشتراك حالي
+        UserPackageSubscription::where('user_id', $user->id)
+            ->where('status', 'active')
+            ->update([
+                'status' => 'expired',
+                'ends_at' => now(),
+            ]);
+
+        $start = now();
+        if($package->period_type == 'Years'){
+            $period = $package->period * 12;
+            $end = $start->copy()->addMonths($period);
+        }else{
+            $end = $start->copy()->addMonths($package->period);
+        }
+
+        $subscription = UserPackageSubscription::create([
+            'user_id' => $user->id,
+            'package_id' => $package->id,
+            'price' => $package->price,
+            'starts_at' => $start,
+            'ends_at' => $end,
+            'status' => 'active',
+            'renewed' => false,
+        ]);
+        }
         $validatedData = $request->validate([
             // "listing_title" => "required",
             "listing_type"  => "required",
@@ -155,7 +200,7 @@ class carListingController extends Controller
         if ($request->pickup_time) {
             $validatedData['pickup_time'] = $request->pickup_time;
         }
-        // dd($validatedData);
+
         $data->update($validatedData);
         if ($data) {
             return response()->json([

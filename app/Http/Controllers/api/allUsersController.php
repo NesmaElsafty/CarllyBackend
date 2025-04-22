@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use App\Http\Resources\UserResource;
 use App\Http\Resources\UserShopResource;
+use App\Models\Package;
+use App\Models\UserPackageSubscription;
 use Storage;
 class allUsersController extends Controller
 {
@@ -57,6 +59,48 @@ class allUsersController extends Controller
             'userType' => "user",
             'image'    => $imagePath, // Save the image path in the database
         ]);
+
+        if ($request->package_id) {
+            $package = Package::findOrFail($request->package_id);
+
+            $start = now();
+            if ($package->period_type == 'Years') {
+                $period = $package->period * 12;
+                $end    = $start->copy()->addMonths($period);
+            } else {
+                $end = $start->copy()->addMonths($package->period);
+            }
+
+            $subscription = UserPackageSubscription::create([
+                'user_id'    => $user->id,
+                'package_id' => $package->id,
+                'price'      => $package->price,
+                'starts_at'  => $start,
+                'ends_at'    => $end,
+                'status'     => 'active',
+                'renewed'    => false,
+            ]);
+        }else{
+            $package = Package::where('title', 'free Car Provider')->first();
+            $start = now();
+            if ($package->period_type == 'Years') {
+                $period = $package->period * 12;
+                $end    = $start->copy()->addMonths($period);
+            } else {
+                $end = $start->copy()->addMonths($package->period);
+            }
+
+            $subscription = UserPackageSubscription::create([
+                'user_id'    => $user->id,
+                'package_id' => $package->id,
+                'price'      => $package->price,
+                'starts_at'  => $start,
+                'ends_at'    => $end,
+                'status'     => 'active',
+                'renewed'    => false,
+            ]);
+        }
+
 
         if ($user) {
             return [

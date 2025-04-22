@@ -132,6 +132,8 @@ Route::get('getPages', [DealerController::class, 'getPages']);
 Route::get('getWorkshopCategories', [WorkShopController::class, 'getWorkshopCategories']);
 Route::get('workshop/{workshop_id}', [WorkShopController::class, 'show']);
 
+Route::get('getAllBanners', [BannerController::class, 'getAll']);
+
 ///// Car Dealer APIs //////////////
 Route::group(['prefix' => 'dealer', 'middleware' => 'guest'], function () {
     Route::post('login', [DealerController::class, 'login']);

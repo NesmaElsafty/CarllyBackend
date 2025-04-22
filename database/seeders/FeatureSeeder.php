@@ -9,12 +9,16 @@ class FeatureSeeder extends Seeder
 {
     public function run(): void
     {
-        // Or generate 10 random ones using Faker
-        $features = array('free','premium', 'featured', 'car_of_the_week', 'normal');
-        foreach($features as $feature){
+        $features = array('normal','featured' ,'car_of_the_week','premium' );
+        
+        for($i=0; $i < count($features); $i++){
             $feat = new Feature();
-            $feat->name = $feature;
+            $feat->name = $features[$i];
+            $feat->priority = $i;
             $feat->save();
         }
+
+        
+       
     }
 }

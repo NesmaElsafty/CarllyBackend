@@ -14,19 +14,24 @@ class PackageSeeder extends Seeder
      */
     public function run(): void
     {
-        $package = new Package();
-        $package->title = 'free'; 
-        $package->period = 1;
-        $package->period_type = 'Months';
-        $package->provider = 'Car Provider';
-        $package->price = 0;
-        $package->save();
+        $packageNames = array('Car Provider','Spare Part Provider','workshop', 'Workshop Provider');
 
-        $feature = Feature::first();
+        foreach($packageNames as $name){
+            $package = new Package();
+            $package->title = 'free ' . $name; 
+            $package->period = 1;
+            $package->period_type = 'Months';
+            $package->provider = $name;
+            $package->price = 0;
+            $package->save();
+            
+            $feature = Feature::where('name', 'normal')->first();
+    
+            DB::table('feature_package')->insert([
+                'feature_id' => $feature->id,
+                'package_id' => $package->id,
+            ]);
+        }
 
-        DB::table('feature_package')->insert([
-            'feature_id' => $feature->id,
-            'package_id' => $package->id,
-        ]);
     }
 }

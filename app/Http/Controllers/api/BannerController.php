@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\QueryException;
 use App\Http\Resources\BannerResource;
-use Storage;
+use Illuminate\Support\Facades\Storage;
 class BannerController extends Controller
 {
     /**
@@ -177,6 +177,24 @@ class BannerController extends Controller
                 'message' => 'Database error: ' . $e->getMessage()
             ], 500);
 
+        }
+    }
+
+    public function getAll(){
+        try {
+            // Fetch all banners
+            $banners = Banner::where('is_active', 'true')->get();
+
+            return response()->json([
+                'message' => 'Banners retrieved successfully!',
+                'data'    => BannerResource::collection($banners),
+            ], 200);
+
+        } catch (\Exception $e) {
+            // Handle any errors
+            return response()->json([
+                'message' => 'An error occurred while fetching banners: ' . $e->getMessage()
+            ], 500);
         }
     }
 }
