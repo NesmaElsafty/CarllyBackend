@@ -14,6 +14,7 @@ use App\Http\Controllers\api\ShopController;
 use App\Http\Controllers\api\WorkShopCategoryController;
 use App\Http\Controllers\api\WorkShopController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 
 /*
 |--------------------------------------------------------------------------
@@ -255,3 +256,18 @@ Route::get('searchSpareParts', [allUsersController::class, 'searchSpareParts']);
 //New Apis for deep linking
 Route::get('getCarListingById/{id}', [carListingController::class, 'getCarListingById']);
 Route::get('getSparePartsById/{id}', [carListingController::class, 'getSparePartsById']);
+
+
+Route::get('/share/workshop', function (Request $request) {
+    $workshopId = $request->query('id');
+
+    $userAgent = strtolower($request->header('User-Agent'));
+    $isMobile = str_contains($userAgent, 'android') || str_contains($userAgent, 'iphone');
+
+    if ($isMobile) {
+        $baseUrl = env('APP_URL');
+        return redirect($baseUrl."/workshop/$workshopId");
+    }
+
+    return response("Please open this link on your mobile device.", 200);
+});
