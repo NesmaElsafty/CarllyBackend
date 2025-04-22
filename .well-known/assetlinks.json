@@ -1,0 +1,14 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.carllymotors.carllyuser",
+      "sha256_cert_fingerprints": [
+        "10:45:a1:61:3a:18:5e:8b:f9:f4:67:dd:e4:15:60:8a:97:3a:62:d6:53:5a:74:55:3e:4c:7f:70:00:ab:4b:0c",
+        "38:c0:93:44:6f:ae:2e:5c:9b:43:be:f7:30:24:ad:95:28:30:37:da:f2:1e:f8:8c:d4:48:b1:f7:d3:77:c6:01",
+        "14:8a:69:68:54:37:57:9d:54:aa:5e:51:30:0d:14:0d:13:3d:dc:82:2a:5b:5a:69:4f:ff:27:52:f1:1e:6c:71"
+      ]
+    }
+  }
+]
