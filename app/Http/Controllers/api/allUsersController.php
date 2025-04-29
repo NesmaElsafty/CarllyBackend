@@ -146,7 +146,7 @@ class allUsersController extends Controller
 
     public function updateProfile(Request $request)
     {
-
+// dd('update');
         $data = [];
         if ($request->fname) {
             $data['fname'] = $request->fname;

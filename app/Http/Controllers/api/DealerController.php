@@ -29,45 +29,45 @@ class DealerController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            "email"        => 'required|email|unique:allusers,email,NULL,id,usertype,dealer',
-            "phone"        => 'required|unique:allusers,phone,NULL,id,usertype,dealer',
-            'fname'        => 'required',
-            'password'     => 'required|min:6',
-            'lat'          => 'required',
-            'lng'          => 'required',
-            'city'         => 'required',
-            'location'     => 'required',
+            "email" => 'required|email|unique:allusers,email,NULL,id,usertype,dealer',
+            "phone" => 'required|unique:allusers,phone,NULL,id,usertype,dealer',
+            'fname' => 'required',
+            'password' => 'required|min:6',
+            'lat' => 'required',
+            'lng' => 'required',
+            'city' => 'required',
+            'location' => 'required',
             'company_name' => 'required',
         ]);
 
         $user = allUsersModel::create([
-            'fname'    => $request['fname'],
-            'lname'    => $request['lname'],
-            'phone'    => $request['phone'],
-            'email'    => $request['email'],
+            'fname' => $request['fname'],
+            'lname' => $request['lname'],
+            'phone' => $request['phone'],
+            'email' => $request['email'],
             'password' => bcrypt($request['password']),
-            'city'     => $request['city'] ?? '',
-            'lat'      => $request['lat'] ?? '',
-            'lng'      => $request['lng'] ?? '',
+            'city' => $request['city'] ?? '',
+            'lat' => $request['lat'] ?? '',
+            'lng' => $request['lng'] ?? '',
             'location' => $request['location'] ?? '',
             "usertype" => "dealer",
         ]);
         $cData = [
-            "company_name"    => $request->company_name,
+            "company_name" => $request->company_name,
             "company_address" => $request->location,
-            "user_id"         => $user->id,
+            "user_id" => $user->id,
         ];
 
         if ($request->hasFile('company_img')) {
-            $img1     = $request->file('company_img');
+            $img1 = $request->file('company_img');
             $imgname1 = time() . '.' . $img1->getClientOriginalExtension();
-            $path = Storage::disk('r2')->put('dealers/' . $imgname1, file_get_contents($img1));   
+            $path = Storage::disk('r2')->put('dealers/' . $imgname1, file_get_contents($img1));
 
-            $company_img          = 'dealers/' . $imgname1;
+            $company_img = 'dealers/' . $imgname1;
             $cData['company_img'] = $company_img;
 
         } else {
-            $company_img          = 'icon/notfound.png';
+            $company_img = 'icon/notfound.png';
             $cData['company_img'] = $company_img;
         }
         $user->update(['image' => $cData['company_img']]);
@@ -76,19 +76,19 @@ class DealerController extends Controller
 
         if ($user) {
             return [
-                'status'  => true,
+                'status' => true,
                 'message' => 'Accounted created Successfully!',
-                'data'    => [
-                    "auth_token"   => $user->createToken('tokens')->plainTextToken,
-                    "user"         => new UserResource($user),
+                'data' => [
+                    "auth_token" => $user->createToken('tokens')->plainTextToken,
+                    "user" => new UserResource($user),
                     "company_data" => new ShopResource($user->dealer),
                 ],
             ];
         } else {
             return [
-                'status'  => false,
+                'status' => false,
                 'message' => 'Password is wronged!',
-                'data'    => null,
+                'data' => null,
             ];
 
         }
@@ -103,7 +103,7 @@ class DealerController extends Controller
         }
 
         $request->validate([
-            "email"    => 'required|email',
+            "email" => 'required|email',
             'password' => 'required',
         ]);
 
@@ -111,26 +111,26 @@ class DealerController extends Controller
             ->first();
         if ($user == null) {
             return [
-                'status'  => false,
+                'status' => false,
                 'message' => 'Email is wronged or not registered!',
-                'data'    => null,
+                'data' => null,
             ];
         }
         $validCredentials = Hash::check($request['password'], $user->password);
         // dd($user->password);
         if ($validCredentials) {
             return [
-                'status'  => true,
+                'status' => true,
                 'message' => 'Login Success!',
-                'data'    => [
+                'data' => [
                     "auth_token" => $user->createToken('tokens')->plainTextToken,
-                    "user"       => new UserResource($user),
+                    "user" => new UserResource($user),
                 ],
             ];
         } else {
             return response()->json([
-                'status'  => false,
-                'data'    => null,
+                'status' => false,
+                'data' => null,
                 'message' => 'Password is wronged!',
             ], 422);
         }
@@ -148,17 +148,17 @@ class DealerController extends Controller
 
         if ($user == null) {
             return [
-                'status'  => false,
+                'status' => false,
                 'message' => 'Phone is wronged or not registered!',
-                'data'    => null,
+                'data' => null,
             ];
         } else {
             return [
-                'status'  => true,
+                'status' => true,
                 'message' => 'Login Success!',
-                'data'    => [
+                'data' => [
                     "auth_token" => $user->createToken('tokens')->plainTextToken,
-                    "user"       => new UserResource($user),
+                    "user" => new UserResource($user),
                 ],
             ];
         }
@@ -170,9 +170,9 @@ class DealerController extends Controller
         auth()->user()->tokens()->delete();
 
         return [
-            "status"  => true,
+            "status" => true,
             'message' => 'You Logout successfully',
-            "data"    => [],
+            "data" => [],
         ];
     }
 
@@ -180,10 +180,10 @@ class DealerController extends Controller
     {
         $user = auth()->user();
         return [
-            'status'  => true,
+            'status' => true,
             'message' => "Data get successfully!",
-            'data'    => [
-                'user'         => new UserResource($user),
+            'data' => [
+                'user' => new UserResource($user),
                 'company_data' => new ShopResource($user->dealer),
             ],
             // 'data' => new ShopResource($dealer),
@@ -204,16 +204,16 @@ class DealerController extends Controller
         }
         $carListings = $carListings->paginate(15);
         return [
-            'status'  => true,
+            'status' => true,
             'message' => "Data get successfully!",
-            'data'    => [
+            'data' => [
 
-                "cars"       => $carListings->items(),
+                "cars" => $carListings->items(),
                 "pagination" => [
                     'current_page' => $carListings->currentPage(),
-                    'per_page'     => $carListings->perPage(),
-                    'total'        => $carListings->total(),
-                    'last_page'    => $carListings->lastPage(),
+                    'per_page' => $carListings->perPage(),
+                    'total' => $carListings->total(),
+                    'last_page' => $carListings->lastPage(),
                 ],
             ],
         ];
@@ -234,16 +234,16 @@ class DealerController extends Controller
         }
         $carListings = $carListings->paginate(15);
         return [
-            'status'  => true,
+            'status' => true,
             'message' => "Data get successfully!",
-            'data'    => [
-                "user"       => new UserResource(auth()->user()),
-                "cars"       => CarlistingResource::collection($carListings),
+            'data' => [
+                "user" => new UserResource(auth()->user()),
+                "cars" => CarlistingResource::collection($carListings),
                 "pagination" => [
                     'current_page' => $carListings->currentPage(),
-                    'per_page'     => $carListings->perPage(),
-                    'total'        => $carListings->total(),
-                    'last_page'    => $carListings->lastPage(),
+                    'per_page' => $carListings->perPage(),
+                    'total' => $carListings->total(),
+                    'last_page' => $carListings->lastPage(),
                 ],
             ],
         ];
@@ -252,32 +252,32 @@ class DealerController extends Controller
     public function addCarListing(Request $request)
     {
         $validatedData = $request->validate([
-            "car_type"      => "required|in:New,Imported,Auction,Used",
-            "listing_type"  => "required",
+            "car_type" => "required|in:New,Imported,Auction,Used",
+            "listing_type" => "required",
             "listing_model" => "required",
-            "listing_year"  => "required",
+            "listing_year" => "required",
             "listing_price" => "required|gt:0",
         ]);
         $validatedData += [
-            'listing_desc'          => $request->listing_desc,
-            'user_id'               => auth()->user()->id,
-            'listing_title'         => $request->listing_type . ' ' . $request->listing_model,
-            'features_gear'         => $request->features_gear,
-            'features_speed'        => $request->features_speed,
-            'features_seats'        => $request->features_seats,
-            'features_door'         => $request->features_door,
-            'features_fuel_type'    => $request->features_fuel_type,
+            'listing_desc' => $request->listing_desc,
+            'user_id' => auth()->user()->id,
+            'listing_title' => $request->listing_type . ' ' . $request->listing_model,
+            'features_gear' => $request->features_gear,
+            'features_speed' => $request->features_speed,
+            'features_seats' => $request->features_seats,
+            'features_door' => $request->features_door,
+            'features_fuel_type' => $request->features_fuel_type,
             'features_climate_zone' => $request->features_climate_zone,
-            'features_cylinders'    => $request->features_cylinders,
-            'features_bluetooth'    => $request->features_bluetooth,
-            'features_others'       => $request->features_others,
-            'car_color'             => $request->car_color,
-            'body_type'             => $request->body_type,
-            'regional_specs'        => $request->regional_specs,
-            'vin_number'            => $request->vin_number,
-            'wa_number'             => $request->wa_number,
-            'contact_number'        => $request->contact_number,
-            'max'                   => 10,
+            'features_cylinders' => $request->features_cylinders,
+            'features_bluetooth' => $request->features_bluetooth,
+            'features_others' => $request->features_others,
+            'car_color' => $request->car_color,
+            'body_type' => $request->body_type,
+            'regional_specs' => $request->regional_specs,
+            'vin_number' => $request->vin_number,
+            'wa_number' => $request->wa_number,
+            'contact_number' => $request->contact_number,
+            'max' => 10,
         ];
 
         if ($request->pickup_date) {
@@ -299,8 +299,8 @@ class DealerController extends Controller
 
                 $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
 
-                $path = Storage::disk('r2')->put('listings/' . $imgName, file_get_contents($uploadedImage));   
-                
+                $path = Storage::disk('r2')->put('listings/' . $imgName, file_get_contents($uploadedImage));
+
                 // $uploadedImage->move(public_path('listings'), $imgName);
                 $imagePath = 'listings/' . $imgName;
 
@@ -313,42 +313,42 @@ class DealerController extends Controller
         }
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => "Car listed successfully!",
-            'data'    => new CarlistingResource($data),
+            'data' => new CarlistingResource($data),
         ]);
     }
     public function editCarListing(Request $request)
     {
         $validatedData = $request->validate([
-            "car_type"      => "required|in:New,Imported,Auction,Used",
+            "car_type" => "required|in:New,Imported,Auction,Used",
             // "listing_title" => "required",
-            "listing_type"  => "required",
+            "listing_type" => "required",
             "listing_model" => "required",
-            "listing_year"  => "required",
+            "listing_year" => "required",
             "listing_price" => "required|gt:0",
         ]);
 
         $user = auth()->user();
 
         $validatedData += [
-            'listing_desc'          => $request->listing_desc,
-            'listing_title'         => $request->listing_type . ' ' . $request->listing_model,
-            'features_gear'         => $request->features_gear,
-            'features_speed'        => $request->features_speed,
-            'features_seats'        => $request->features_seats,
-            'features_door'         => $request->features_door,
-            'features_fuel_type'    => $request->features_fuel_type,
+            'listing_desc' => $request->listing_desc,
+            'listing_title' => $request->listing_type . ' ' . $request->listing_model,
+            'features_gear' => $request->features_gear,
+            'features_speed' => $request->features_speed,
+            'features_seats' => $request->features_seats,
+            'features_door' => $request->features_door,
+            'features_fuel_type' => $request->features_fuel_type,
             'features_climate_zone' => $request->features_climate_zone,
-            'features_cylinders'    => $request->features_cylinders,
-            'features_bluetooth'    => $request->features_bluetooth,
-            'features_others'       => $request->features_others,
-            'car_color'             => $request->car_color,
-            'body_type'             => $request->body_type ?: '',
-            'regional_specs'        => $request->regional_specs ?: '',
-            'vin_number'            => $request->vin_number ?: '',
-            'wa_number'             => $request->wa_number ?? '',
-            'contact_number'        => $request->contact_number ?? '',
+            'features_cylinders' => $request->features_cylinders,
+            'features_bluetooth' => $request->features_bluetooth,
+            'features_others' => $request->features_others,
+            'car_color' => $request->car_color,
+            'body_type' => $request->body_type ?: '',
+            'regional_specs' => $request->regional_specs ?: '',
+            'vin_number' => $request->vin_number ?: '',
+            'wa_number' => $request->wa_number ?? '',
+            'contact_number' => $request->contact_number ?? '',
         ];
         if ($request->auction_name) {
             $validatedData['auction_name'] = $request->auction_name;
@@ -362,9 +362,9 @@ class DealerController extends Controller
         $data = carListingModel::findOrFail($request->carId);
         $data->update($validatedData);
         return [
-            'status'  => true,
+            'status' => true,
             'message' => "Car list updated successfully!",
-            'data'    => new CarlistingResource($data),
+            'data' => new CarlistingResource($data),
         ];
     }
 
@@ -372,21 +372,21 @@ class DealerController extends Controller
     {
         try {
             $request->validate([
-                'carId'    => 'required',
+                'carId' => 'required',
                 'images.*' => 'image|mimes:jpg,jpeg,png,gif',
             ]);
             $data = carListingModel::findOrFail($request->carId);
             if ($data->current + count($request->images) > $data->max) {
 
                 return response()->json([
-                    'status'  => false,
+                    'status' => false,
                     'message' => "You can't upload more than " . $data->max . " images!",
                 ]);
             } else {
                 foreach ($request->images as $index => $uploadedImage) {
 
                     $imgName = time() . '_' . $index . '.' . $uploadedImage->getClientOriginalExtension();
-                    $path = Storage::disk('r2')->put('listings/' . $imgName, file_get_contents($uploadedImage));   
+                    $path = Storage::disk('r2')->put('listings/' . $imgName, file_get_contents($uploadedImage));
 
                     // $uploadedImage->move(public_path('listings'), $imgName);
                     $imagePath = 'listings/' . $imgName;
@@ -400,15 +400,15 @@ class DealerController extends Controller
                 }
 
                 return response()->json([
-                    'status'  => true,
+                    'status' => true,
                     'message' => "Images uploaded successfully!",
-                    'data'    => ImageResource::collection($data->images),
+                    'data' => ImageResource::collection($data->images),
                 ]);
             }
 
         } catch (Exception $e) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => $e->getMessage(),
             ]);
         }
@@ -419,39 +419,39 @@ class DealerController extends Controller
     {
         try {
             $img = Image::findOrFail($id);
-    
+
             $path = $img->image; // استخدم المسار النسبي داخل الـ bucket فقط
-    
+
             if (Storage::disk('r2')->exists($path)) {
                 Storage::disk('r2')->delete($path);
             }
-    
+
             $data = carListingModel::findOrFail($img->carlisting_id);
             $data->current = $data->current - 1;
             $data->save();
-    
+
             $img->delete();
-    
+
             return [
-                'status'  => true,
+                'status' => true,
                 'message' => "Image is removed from list and filesystem successfully!",
-                'data'    => null,
+                'data' => null,
             ];
         } catch (Exception $e) {
             return [
-                'status'  => false,
+                'status' => false,
                 'message' => $e->getMessage(),
             ];
         }
     }
-    
+
     public function delCar(Request $request)
     {
         $car = carListingModel::findOrFail($request->list_id);
-        
-        foreach($car->images as $img){
+
+        foreach ($car->images as $img) {
             $filePath = public_path($img->image); // assuming $img->image = 'uploads/cars/image.jpg'
-    
+
             // Delete the file if it exists
 
             if (Storage::disk('r2')->exists($filePath)) {
@@ -463,9 +463,9 @@ class DealerController extends Controller
         $car->delete();
 
         return [
-            'status'  => true,
+            'status' => true,
             'message' => "Car is removed from list successfully!",
-            'data'    => null,
+            'data' => null,
         ];
     }
 
@@ -474,9 +474,9 @@ class DealerController extends Controller
         $data = CarBrand::latest('id')->get();
 
         return [
-            'status'  => true,
+            'status' => true,
             'message' => "Data get successfully!",
-            'data'    => $data,
+            'data' => $data,
         ];
     }
     public function getBrandModels(Request $request)
@@ -488,9 +488,9 @@ class DealerController extends Controller
         $data = BrandModel::where('brand_id', $request->brand_id)->latest('id')->get();
 
         return [
-            'status'  => true,
+            'status' => true,
             'message' => "Data get successfully!",
-            'data'    => $data,
+            'data' => $data,
         ];
     }
 
@@ -503,9 +503,9 @@ class DealerController extends Controller
         $data = ModelYear::where('model_id', $request->model_id)->latest('id')->get();
 
         return [
-            'status'  => true,
+            'status' => true,
             'message' => "Data get successfully!",
-            'data'    => $data,
+            'data' => $data,
         ];
     }
     public function getRegionalSpecs(Request $request)
@@ -513,9 +513,9 @@ class DealerController extends Controller
         $data = RegionalSpec::latest('id')->get();
 
         return [
-            'status'  => true,
+            'status' => true,
             'message' => "Data get successfully!",
-            'data'    => $data,
+            'data' => $data,
         ];
     }
     public function getBodyTypes(Request $request)
@@ -523,9 +523,9 @@ class DealerController extends Controller
         $data = BodyType::latest('id')->get();
 
         return [
-            'status'  => true,
+            'status' => true,
             'message' => "Data get successfully!",
-            'data'    => $data,
+            'data' => $data,
         ];
     }
 
@@ -533,26 +533,27 @@ class DealerController extends Controller
     {
         $setting = Setting::where('name', 'support_details')->pluck('value')->first();
         return [
-            'status'  => true,
+            'status' => true,
             'message' => "Data get successfully!",
-            'data'    => json_decode($setting, true),
+            'data' => json_decode($setting, true),
         ];
     }
     public function getPages(Request $request)
     {
         $setting = Setting::whereIn('name', ['privacy_policy', 'terms_conditions'])->get()->pluck('value', 'name')->toArray();
         return [
-            'status'  => true,
+            'status' => true,
             'message' => "pages get successfully!",
-            'data'    => $setting,
+            'data' => $setting,
         ];
     }
 
     public function updateProfile(Request $request)
     {
         $authUser = auth()->user();
+
         $usertype = $authUser->usertype;
-        $id       = $authUser->id;
+        $id = $authUser->id;
 
         // Validate email and phone uniqueness
         $request->validate([
@@ -567,7 +568,7 @@ class DealerController extends Controller
             ],
         ]);
 
-        $data        = [];
+        $data = [];
         $companyData = [];
 
         // Fill user profile data
@@ -579,11 +580,13 @@ class DealerController extends Controller
 
         // Handle image upload
         if ($request->hasFile('image')) {
-            $image   = $request->file('image');
+            $image = $request->file('image');
             $imgname = time() . '.' . $image->getClientOriginalExtension();
-            $image->move(public_path('users'), $imgname);
+            $path = Storage::disk('r2')->put('users/' . $imgname, file_get_contents($image));
 
-            $data['image']              = 'users/' . $imgname;
+            // $image->move(public_path('users'), $imgname);
+
+            $data['image'] = 'users/' . $imgname;
             $companyData['company_img'] = 'users/' . $imgname;
         }
 
@@ -593,44 +596,44 @@ class DealerController extends Controller
 
         if ($usertype !== 'workshop_provider') {
             // For car dealers
-            $companyData['company_name']    = $request->company_name;
+            $companyData['company_name'] = $request->company_name;
             $companyData['company_address'] = $user->location;
 
             $carDealer = CarDealer::firstOrCreate(['user_id' => $user->id]);
             $carDealer->update($companyData);
 
             return [
-                'status'       => true,
-                'message'      => "Profile updated successfully!",
-                'user'         => new UserResource($user),
+                'status' => true,
+                'message' => "Profile updated successfully!",
+                'user' => new UserResource($user),
                 'company_data' => new ShopResource($carDealer),
             ];
         } else {
             // For workshop providers
             $workshop = $user->workshop_provider;
 
-            if (! $workshop) {
+            if (!$workshop) {
                 // Create if not exists
                 $workshop = WorkshopProvider::create([
-                    'user_id'   => $user->id,
-                    'branch'    => $user->city,
-                    'latitude'  => $user->lat,
+                    'user_id' => $user->id,
+                    'branch' => $user->city,
+                    'latitude' => $user->lat,
                     'longitude' => $user->lng,
-                    'address'   => $user->location,
+                    'address' => $user->location,
                 ]);
             } else {
                 $workshop->update([
-                    'branch'    => $user->city,
-                    'latitude'  => $user->lat,
+                    'branch' => $user->city,
+                    'latitude' => $user->lat,
                     'longitude' => $user->lng,
-                    'address'   => $user->location,
+                    'address' => $user->location,
                 ]);
             }
 
             return [
-                'status'        => true,
-                'message'       => "Profile updated successfully!",
-                'user'          => new UserResource($user),
+                'status' => true,
+                'message' => "Profile updated successfully!",
+                'user' => new UserResource($user),
                 'workshop_data' => new WorkshopResource($workshop),
             ];
         }

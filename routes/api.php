@@ -254,7 +254,7 @@ Route::get('getAllCarsListing', [AdminController::class, 'getCarsListing']);
 Route::get('searchSpareParts', [allUsersController::class, 'searchSpareParts']);
 
 //New Apis for deep linking
-Route::get('getCarListingById/{id}', [carListingController::class, 'getCarListingById']);
+Route::get('getCarListingById/{id}', action: [carListingController::class, 'getCarListingById']);
 Route::get('getSparePartsById/{id}', [carListingController::class, 'getSparePartsById']);
 
 

@@ -15,10 +15,12 @@ class UserResource extends JsonResource
     public function toArray(Request $request): array
     {
         $appUrl = env('APP_URL');
+        
         $r2 = env('CLOUDFLARE_R2_URL');
 
         $image ='/icon/notfound.png';
         if($this->image){
+            $appUrl = str_replace('public/', '', $appUrl); 
             $image = str_replace($appUrl, $r2, $this->image);
         }
         
